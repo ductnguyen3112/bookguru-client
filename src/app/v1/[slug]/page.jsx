@@ -17,7 +17,7 @@ export default async function Page({ params }) {
   async function getData() {
     try {
       const res = await axios.get(
-        "http://localhost:3000/api/booking/" + decodedSlug
+        "https://bookguru-client.vercel.app/api/booking/" + decodedSlug
       );
       return res.data.business;
     } catch (error) {
