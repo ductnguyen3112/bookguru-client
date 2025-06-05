@@ -14,8 +14,9 @@ const Page = () => {
     async function fetchData() {
       try {
         const response = await axios.get(`/api/booking/${slug}`);
-        console.log(response.data.business);
+   
         dispatch(setBusiness(response.data.business));
+
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -25,7 +26,6 @@ const Page = () => {
       fetchData();
     }
   }, [slug]);
-
   
 
   return (

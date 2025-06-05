@@ -1,4 +1,8 @@
+"use client";
 import React from "react";
+
+import { useDispatch } from "react-redux";
+import { setBookSelection } from "../redux/slices/dataSlice";
 
 // Helper to format time as "h:mm AM/PM"
 function formatTime(hours, minutes) {
@@ -46,6 +50,7 @@ function getOpenStatus(workHours) {
 
 const Index = ({ data }) => {
   // Destructure needed data
+  const dispatch = useDispatch();
   const { businessName, businessAddress, catalogue, workHours } = data;
 
   // Calculate total services across all catalogue categories
@@ -56,6 +61,11 @@ const Index = ({ data }) => {
 
   // Dynamically calculate open status based on workHours and current time
   const openStatus = getOpenStatus(workHours);
+
+  const handleBookNow = () => {
+    // Dispatch action to open booking modal
+    dispatch(setBookSelection(true));
+  };
 
   // Placeholder for reviews
   const reviews = 0;
@@ -85,7 +95,10 @@ const Index = ({ data }) => {
         </p>
 
         {/* Book Now Button */}
-        <button className="w-full bg-black text-white py-3 rounded-md text-sm font-medium hover:bg-black/80 mb-2">
+        <button
+          onClick={handleBookNow}
+          className="w-full bg-black text-white py-3 rounded-md text-sm font-medium hover:bg-black/80 mb-2"
+        >
           Book now
         </button>
 

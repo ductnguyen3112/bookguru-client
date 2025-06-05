@@ -28,6 +28,7 @@ export async function GET(_req, { params }) {
         businessDescription: businessData.businessDescription,
         businessCategory: businessData.businessCategory,
         businessTimezone: businessData.businessTimezone,
+        businessLogo: businessData.businessLogo,
         staffs: staffs,
         categories: businessData.categories,
         catalogue: businessData.catalogue,

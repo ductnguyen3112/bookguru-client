@@ -1,97 +1,148 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
 import moment from "moment-timezone";
+import { addTime, addStaff, addDate, setPreference } from "@/app/redux/slices/dataSlice";
 
 export default function TimeSelection() {
+  const dispatch = useDispatch();
   const businessData = useSelector((state) => state.data.business);
   const selectedData = useSelector((state) => state.data.selected);
-  const selectedStaff = selectedData.staffs;
+  const selectedStaff = selectedData.staff;
   const duration = selectedData.duration;
   const timezone = businessData.businessTimezone;
+  const preference = selectedData.preference;
+  const staffs = useSelector((state) => state.data.business?.staffs || []);
 
-  // Local state for selected date, defaulting to current date or Redux value if provided.
+  const preferenceStaff = staffs.find((s) => s._id === selectedStaff);
+  const isAnySelected = !preference || !selectedStaff;
+
   const [selectedDate, setSelectedDate] = useState(
     selectedData.date ? moment(selectedData.date) : moment()
   );
-
-  // Format the selected date for API usage (in UTC)
+  const [selectedTime, setSelectedTime] = useState(null);
   const selectedDateUTC = selectedDate.clone().utc().toISOString();
 
   const [timeSlots, setTimeSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch time slots whenever the staff, selected date, or duration changes.
   useEffect(() => {
+    if (!selectedDateUTC || !duration || !businessData?.businessURL) return;
+
+    const controller = new AbortController();
+
     async function fetchTimeSlots() {
       try {
         setLoading(true);
-        const response = await axios.post("/api/booking/get-time", {
+
+        const payload = {
           domain: businessData.businessURL,
-          staff: selectedStaff,
           date: selectedDateUTC,
-          duration: duration,
+          duration,
+        };
+
+        if (!selectedStaff) {
+          payload.staffs = staffs.map((s) => s._id);
+        } else {
+          payload.staff = selectedStaff;
+        }
+
+        const response = await axios.post("/api/booking/get-time", payload, {
+          signal: controller.signal,
         });
-        setTimeSlots(response.data.slots);
+
+        if (!selectedStaff && response.data.staff) {
+          dispatch(addStaff(response.data.staff));
+        }
+
+        setTimeSlots(response.data.slots || []);
       } catch (err) {
+        if (axios.isCancel(err)) return;
         setError(err.response?.data?.error || err.message);
       } finally {
         setLoading(false);
       }
     }
-    fetchTimeSlots();
-  }, [selectedStaff, selectedDateUTC, duration, businessData.businessURL]);
 
+    fetchTimeSlots();
+
+    return () => controller.abort();
+  }, [selectedStaff, selectedDateUTC, duration, businessData?.businessURL]);
 
   if (error) return <div>Error: {error}</div>;
 
-  // Generate a date range for 30 days starting from today.
   const dateRange = Array.from({ length: 30 }, (_, i) => {
     const d = moment().add(i, "days");
     return {
       date: d,
       day: d.date(),
-      dayName: d.format("ddd"), // e.g. Mon, Tue, Wed...
+      dayName: d.format("ddd"),
     };
   });
 
-  // Update the selected date when a date is clicked.
   const handleDateClick = (d) => {
+    const date = moment(d).format("YYYY-MM-DD");
     setSelectedDate(d);
+    dispatch(addDate(date));
+  };
+
+  const handleTimeSelect = (time) => {
+    setSelectedTime(time);
+    dispatch(addTime(time));
+  };
+
+  const handleChange = (e) => {
+    const staffId = e.target.value;
+
+    if (staffId === "any") {
+      dispatch(addStaff(null));
+      dispatch(setPreference(false));
+      setSelectedTime(null);
+    } else {
+      dispatch(addStaff(staffId));
+      dispatch(setPreference(true));
+      setSelectedTime(null);
+    }
   };
 
   return (
     <div className="w-full mx-auto p-4">
-      {/* Breadcrumb or step indicator */}
       <nav className="text-sm text-gray-500 mb-3">
         <span>Services &gt; Professional &gt; Time &gt; Confirm</span>
       </nav>
 
-      {/* Page Title */}
       <h1 className="text-2xl font-bold mb-6">Select services</h1>
       <div className="slide-animated">
         {/* Staff Selector */}
         <div className="flex items-center space-x-2 mb-6">
           <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center">
-            <span className="text-sm font-medium text-gray-700">J</span>
+            <span className="text-sm font-medium text-gray-700">
+              {isAnySelected
+                ? "A"
+                : preferenceStaff?.staffName?.charAt(0) || "?"}
+            </span>
           </div>
-          <button className="flex items-center space-x-1 text-sm text-gray-700 font-medium">
-            <span>Jenny Yen</span>
-            <svg
-              className="w-4 h-4 text-gray-400"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path d="M5.23 7.21a.75.75 0 011.06-.02L10 10.67l3.71-3.48a.75.75 0 011.04 1.08l-4.24 3.98a.75.75 0 01-1.04 0L5.21 8.27a.75.75 0 01.02-1.06z" />
-            </svg>
-          </button>
+          <select
+            value={isAnySelected ? "any" : selectedStaff || ""}
+            onChange={handleChange}
+            className="text-md text-gray-700 p-1 border border-gray-200 rounded-lg font-bold bg-transparent outline-none"
+          >
+            <option value="any">Any professional</option>
+            {staffs.map((staff) => (
+              <option key={staff._id} value={staff._id}>
+                {staff.staffName}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Month label */}
         <div className="mb-4">
-          <p className="text-gray-500 font-medium">{selectedDate.format("MMMM YYYY")}</p>
+          <p className="text-gray-500 font-medium">
+            {selectedDate.format("MMMM YYYY")}
+          </p>
         </div>
 
         {/* Horizontal date picker */}
@@ -105,7 +156,7 @@ export default function TimeSelection() {
                 className="flex flex-col items-center focus:outline-none"
               >
                 <div
-                  className={`rounded-full w-16 h-16 flex items-center justify-center font-semibold mb-1 ${
+                  className={`rounded-2xl w-16 h-16 flex items-center justify-center font-semibold mb-1 ${
                     isSelected
                       ? "bg-indigo-600 text-white"
                       : "bg-gray-200 text-gray-700"
@@ -113,7 +164,9 @@ export default function TimeSelection() {
                 >
                   {dateObj.day}
                 </div>
-                <span className="text-xs text-gray-600">{dateObj.dayName}</span>
+                <span className="text-xs text-gray-600">
+                  {dateObj.dayName}
+                </span>
               </button>
             );
           })}
@@ -121,13 +174,20 @@ export default function TimeSelection() {
 
         {/* Time slots */}
         <div className="space-y-2">
-          {timeSlots.length > 0 ? (
+          {loading ? (
+            <p className="text-gray-500">Loading...</p>
+          ) : timeSlots.length > 0 ? (
             timeSlots.map((slot, index) => (
               <button
                 key={index}
-                className="w-full text-left border border-gray-200 rounded-md py-4 px-4 hover:bg-gray-50 focus:outline-none"
+                onClick={() => handleTimeSelect(slot.start)}
+                className={`w-full text-left border rounded-md py-4 px-4 hover:bg-gray-50 focus:outline-none ${
+                  selectedTime === slot.start
+                    ? "border-indigo-600"
+                    : "border-gray-200"
+                }`}
               >
-                {moment(slot.start).tz(timezone).format("hh:mm A")} 
+                {moment(slot.start).tz(timezone).format("hh:mm A")}
               </button>
             ))
           ) : (

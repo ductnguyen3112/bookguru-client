@@ -21,22 +21,19 @@ export async function POST(request) {
     }
 
     const timeZone = business.businessTimezone;
-    const dayOfWeek = moment.tz(date, timeZone).format("dddd");
+    const requestedDay = moment.tz(date, timeZone);
+    const dayOfWeek = requestedDay.format("dddd");
 
-    const dayStart = moment
-      .tz(date, timeZone)
-      .startOf("day")
-      .utc()
-      .toISOString();
-    const dayEnd = moment.tz(date, timeZone).endOf("day").utc().toISOString();
+    const dayStart = requestedDay.clone().startOf("day").utc().toISOString();
+    const dayEnd = requestedDay.clone().endOf("day").utc().toISOString();
 
     let selectedStaffId = staff;
 
-    // If 'staffs' array is provided, find the least busy staff
-    if (staffs && Array.isArray(staffs) && staffs.length > 0) {
+    // Handle multiple staff selection
+    if (staffs && staffs.length > 0) {
       let minTotalDuration = Infinity;
-      for (const s of staffs) {
-        const staffId = typeof s === "string" ? s : s._id;
+
+      for (const staffId of staffs) {
         const staffDoc = await Staff.findById(staffId);
         const schedule = staffDoc?.staffSchedule?.[dayOfWeek];
 
@@ -50,9 +47,8 @@ export async function POST(request) {
 
         let totalDuration = 0;
         for (const appt of appointments) {
-          const start = new Date(appt.start).getTime();
-          const end = new Date(appt.end).getTime();
-          totalDuration += end - start;
+          totalDuration +=
+            new Date(appt.end).getTime() - new Date(appt.start).getTime();
         }
 
         if (totalDuration < minTotalDuration) {
@@ -63,20 +59,21 @@ export async function POST(request) {
 
       if (!selectedStaffId) {
         return NextResponse.json({
-          message: "No staff available",
+          message: "No available staff",
           success: true,
           slots: [],
         });
       }
     }
 
-    const staffMember = await Staff.findOne({ _id: selectedStaffId });
+    // Get staff info
+    const staffMember = await Staff.findById(selectedStaffId);
     if (!staffMember) {
       return NextResponse.json({ error: "Staff not found" }, { status: 404 });
     }
 
-    const staffWorkHours = staffMember.staffSchedule[dayOfWeek];
-    if (!staffWorkHours?.isWork) {
+    const staffSchedule = staffMember.staffSchedule[dayOfWeek];
+    if (!staffSchedule?.isWork) {
       return NextResponse.json({
         message: "off",
         success: true,
@@ -84,12 +81,18 @@ export async function POST(request) {
       });
     }
 
-    const { open } = business.workHours[dayOfWeek];
-    const [openHour, openMinute] = open.split(":").map(Number);
-    const [staffStartHour, staffStartMinute] = staffWorkHours.start
+    const appointments = await Appointment.find({
+      businessId: business._id,
+      staff: selectedStaffId,
+      start: { $gte: dayStart, $lte: dayEnd },
+    });
+
+    const businessOpen = business.workHours?.[dayOfWeek]?.open || "09:00";
+    const [openHour, openMinute] = businessOpen.split(":").map(Number);
+    const [staffStartHour, staffStartMinute] = staffSchedule.start
       .split(":")
       .map(Number);
-    const [staffEndHour, staffEndMinute] = staffWorkHours.end
+    const [staffEndHour, staffEndMinute] = staffSchedule.end
       .split(":")
       .map(Number);
 
@@ -100,47 +103,37 @@ export async function POST(request) {
       millisecond: 0,
     });
 
-    const staffFinishTime = moment.tz(date, timeZone).set({
+    const closingTime = moment.tz(date, timeZone).set({
       hour: staffEndHour,
       minute: staffEndMinute,
       second: 0,
       millisecond: 0,
     });
 
-    const appointments = await Appointment.find({
-      businessId: business._id,
-      staff: selectedStaffId,
-      start: { $gte: dayStart, $lte: dayEnd },
-    });
-
     const currentTime = moment.tz(timeZone);
-    const requestedDay = moment.tz(date, timeZone);
     const isToday = requestedDay.isSame(currentTime, "day");
 
     const availableSlots = [];
     const slotIncrement = 15;
 
     while (
-      localTime.clone().add(duration, "minutes").isSameOrBefore(staffFinishTime)
+      localTime.clone().add(duration, "minutes").isSameOrBefore(closingTime)
     ) {
       if (
         !isToday ||
         localTime.isAfter(currentTime.clone().add(15, "minutes"))
       ) {
         const slotStart = localTime.clone();
-        const slotEnd = slotStart.clone().add(duration, "minutes");
+        const slotEnd = localTime.clone().add(duration, "minutes");
 
         let isSlotAvailable = true;
-        for (const appointment of appointments) {
-          if (appointment.status === "canceled") continue;
+        for (const appt of appointments) {
+          if (appt.status === "canceled") continue;
 
-          const appointmentStart = moment.tz(appointment.start, timeZone);
-          const appointmentEnd = moment.tz(appointment.end, timeZone);
+          const apptStart = moment.tz(appt.start, timeZone);
+          const apptEnd = moment.tz(appt.end, timeZone);
 
-          if (
-            slotStart.isBefore(appointmentEnd) &&
-            slotEnd.isAfter(appointmentStart)
-          ) {
+          if (slotStart.isBefore(apptEnd) && slotEnd.isAfter(apptStart)) {
             isSlotAvailable = false;
             break;
           }
@@ -160,10 +153,11 @@ export async function POST(request) {
     return NextResponse.json({
       message: "Available slots",
       success: true,
+      staffId: selectedStaffId,
       slots: availableSlots,
-      staff: selectedStaffId,
     });
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

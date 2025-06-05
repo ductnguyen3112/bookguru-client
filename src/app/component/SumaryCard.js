@@ -1,15 +1,34 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { use, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
+import { useDispatch } from "react-redux";
+
+import { setModal, setModalTitle, addStaff } from "../redux/slices/dataSlice";
+import axios from "axios";
 
 export default function SummaryCard() {
+  const dispatch = useDispatch();
   const router = useRouter();
-  const { cost, duration, services } = useSelector(
-    (state) => state.data.selected
-  );
+  const {
+    cost,
+    duration,
+    staff,
+    services,
+    note,
+    preference,
+    time,
+    randomStaff,
+  } = useSelector((state) => state.data.selected);
+
+  const clientData = useSelector((state) => state.data.clientData.client);
+
   const business = useSelector((state) => state.data.business);
   const domain = business.businessURL;
+  const [buttonValue, setButtonValue] = useState("Continue");
+  const start = new Date(time); // time is already ISO 8601
+  const end = new Date(start.getTime() + duration * 60000); // add duration in ms
 
   useEffect(() => {
     if (!services.length) {
@@ -54,15 +73,69 @@ export default function SummaryCard() {
       // e.g. when no step is present, go to booking start (adjust URL as needed)
 
       case "staff":
+        if (!preference) {
+          dispatch(addStaff(randomStaff));
+        }
+
         router.push(`/v1/${domain}/booking/time`);
+
         break;
       case "time":
-        router.push(`/v1/${domain}/booking/details`);
+        if (!time || time === "null" || time === "undefined") {
+          toast.error("Please select a time");
+          return;
+        }
+        router.push(`/v1/${domain}/booking/overview`);
+
+        break;
+      case "overview":
+        setButtonValue("Processing...");
+
+        const token = localStorage.getItem("token");
+
+        if (!token || token === "null" || token === "undefined") {
+          dispatch(setModal(true));
+          dispatch(setModalTitle("ClientPhoneSignin"));
+
+          return;
+        } else {
+          SubmitAppointment();
+        }
         break;
       // Add more cases as needed for other steps
       default:
         router.push(`/v1/${domain}/booking/staff`);
         break;
+    }
+  };
+
+  const SubmitAppointment = async () => {
+    try {
+      const appointment = {
+        url: domain,
+        servicesId: services,
+        userId: clientData._id,
+        staff: staff,
+        total: cost,
+        note: note,
+        start: start.toISOString(), // maintain UTC ISO format
+        end: end.toISOString(), // maintain UTC ISO format
+        preference,
+        duration,
+        status: "approved",
+      };
+
+      const response = await axios.post(
+        "/api/client/appointment/add",
+        appointment
+      );
+
+      router.push(`/v1/${domain}/confirm`);
+    } catch (error) {
+      console.error(error);
+      router.push(`/v1/${domain}`);
+      setButtonValue("Continue");
+      toast.error("Something went wrong, please try again");
     }
   };
   return (
@@ -116,7 +189,7 @@ export default function SummaryCard() {
             onClick={nextStep}
             className="w-30 lg:w-full bg-black text-white py-3 rounded-md text-sm font-medium hover:bg-black/80 transition"
           >
-            Continue
+            {buttonValue}
           </button>
         </div>
       </div>

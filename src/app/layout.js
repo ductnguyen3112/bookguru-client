@@ -2,6 +2,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Footer from "./component/Footer";
 import { ReduxProvider } from "./redux/provider";
+import ClientModal from "./component/client/ClientModal";
+import GetUserData from "./component/GetUserData";
+import {Toaster} from "react-hot-toast";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,6 +25,9 @@ export default function RootLayout({ children }) {
       >
         <ReduxProvider>
           <main className="flex-grow">{children}</main>
+          <ClientModal/>
+          <GetUserData />
+          <Toaster />
         </ReduxProvider>
         <Footer />
       </body>

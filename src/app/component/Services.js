@@ -5,27 +5,30 @@ import { useRouter } from "next/navigation";
 
 export default function ServicesPage({ data }) {
   const { catalogue, businessURL } = data;
-
   const router = useRouter();
 
-  // Set "all" as the default active tab to show all services
   const [activeTab, setActiveTab] = useState("all");
   const [expandedCategories, setExpandedCategories] = useState({});
 
-  // If "All Services" tab is active, aggregate services from every category.
-  // Otherwise, use the selected category.
+  // Get active services
   let activeServices = [];
   let activeCategoryInfo = null;
+
   if (activeTab === "all") {
     activeServices = catalogue.flatMap((category) =>
       category.categoryServices.filter((service) => service.show)
     );
+    // Fallback: if no services are shown, show all
+    if (activeServices.length === 0) {
+      activeServices = catalogue.flatMap((category) => category.categoryServices);
+    }
   } else {
     const activeCategory = catalogue[activeTab];
     activeCategoryInfo = activeCategory;
-    activeServices = activeCategory.categoryServices.filter(
-      (service) => service.show
-    );
+    activeServices = activeCategory.categoryServices.filter((service) => service.show);
+    if (activeServices.length === 0) {
+      activeServices = activeCategory.categoryServices;
+    }
   }
 
   const isExpanded = expandedCategories[activeTab];
@@ -38,15 +41,13 @@ export default function ServicesPage({ data }) {
     }));
   };
 
-  // Handler to navigate to the booking page for the selected service
   const handleBook = (serviceId) => {
-    // Update the URL with the selected serviceId as a query parameter
     router.push(`/v1/${businessURL}/booking?serviceId=${serviceId}`);
   };
 
   return (
     <>
-      {/* Category Tabs with an "All Services" option */}
+      {/* Category Tabs */}
       <div className="flex space-x-4 border-b pb-2 overflow-x-auto">
         <button
           onClick={() => setActiveTab("all")}
@@ -73,7 +74,7 @@ export default function ServicesPage({ data }) {
         ))}
       </div>
 
-      {/* Active Category / All Services Section */}
+      {/* Category Info */}
       <div>
         {activeTab === "all" ? (
           <h2 className="text-xl font-semibold text-gray-800 mt-4">All Services</h2>
@@ -96,7 +97,7 @@ export default function ServicesPage({ data }) {
           </>
         )}
 
-        {/* List of Services */}
+        {/* Services List */}
         <div className="space-y-4 mt-5">
           {displayedServices.map((service) => (
             <div
@@ -104,15 +105,9 @@ export default function ServicesPage({ data }) {
               className="flex items-center justify-between p-4 border border-gray-300 rounded-lg hover:bg-gray-100"
             >
               <div>
-                <h3 className="font-medium text-gray-800">
-                  {service.serviceName}
-                </h3>
-                <p className="text-sm text-gray-500">
-                  Duration: {service.duration} min
-                </p>
-                <p className="text-sm text-gray-500">
-                  Price: ${service.price}
-                </p>
+                <h3 className="font-medium text-gray-800">{service.serviceName}</h3>
+                <p className="text-sm text-gray-500">Duration: {service.duration} min</p>
+                <p className="text-sm text-gray-500">Price: ${service.price}</p>
               </div>
               <button
                 onClick={() => handleBook(service._id)}
@@ -124,13 +119,10 @@ export default function ServicesPage({ data }) {
           ))}
         </div>
 
-        {/* Show More / Show Less Button */}
+        {/* Expand Button */}
         {activeServices.length > 3 && (
           <div className="mt-4 text-center">
-            <button
-              onClick={toggleExpand}
-              className="text-black font-medium underline"
-            >
+            <button onClick={toggleExpand} className="text-black font-medium underline">
               {isExpanded ? "Show Less" : "Show More"}
             </button>
           </div>

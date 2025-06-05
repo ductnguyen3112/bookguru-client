@@ -1,6 +1,6 @@
 import axios from "axios";
 import React from "react";
-import { notFound } from "next/navigation"; // Import notFound
+import { notFound } from "next/navigation";
 import Header from "@/app/component/Header";
 import Services from "@/app/component/Services";
 import BookModal from "@/app/component/BookModal";
@@ -8,10 +8,13 @@ import Team from "@/app/component/Team";
 import BusinessDetail from "../../component/BusinessDetail";
 import GoogleMap from "@/app/component/GoogleMap";
 import BusinessHours from "@/app/component/BusinessHour";
+import BookSelection from "@/app/component/BookSelection"; // Uncomment if you want to use BookSelection component
 import Meta from "@/app/component/Meta";
 
 export default async function Page({ params }) {
-  const { slug } = params;
+  // Await params before using its properties.
+  const awaitedParams = await params;
+  const { slug } = awaitedParams;
   const decodedSlug = decodeURIComponent(slug);
 
   async function getData() {
@@ -19,13 +22,12 @@ export default async function Page({ params }) {
       const res = await axios.get(
         "https://bookguru-client.vercel.app/api/booking/" + decodedSlug
       );
+      console.log("Response data:", res.data);
       return res.data.business;
     } catch (error) {
-      // Check if the error response status is 400
       if (error.response && error.response.status === 400) {
         notFound();
       } else {
-        // You might want to handle other errors or rethrow
         console.error("Error fetching data:", error);
         throw error;
       }
@@ -42,6 +44,8 @@ export default async function Page({ params }) {
     <>
       <Meta data={data} />
       <Header data={data} />
+      {/* Uncomment the following line if you want to use BookSelection component */}
+      <BookSelection />
       <div className="bg-white mx-2 md:mx-5 h-full">
         <BusinessDetail data={data} />
         <div className="p-4 mx-2 lg:mx-8 mt-5 ">
