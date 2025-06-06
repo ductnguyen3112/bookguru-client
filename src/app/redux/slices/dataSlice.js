@@ -13,7 +13,6 @@ const initialState = {
     services: [],
     duration: 0,
     time: "",
-    randomStaff: "",
     user: "",
     status: "",
     note: "",

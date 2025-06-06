@@ -1,98 +1,92 @@
+// --- Redux Slice: groupBookingSlice.js ---
 import { createSlice } from "@reduxjs/toolkit";
-
-const createGuest = () => ({
-  services: [],
-  duration: 0,
-  cost: 0,
-  staffs: [],
-  staff: "any",
-  time: "",
-  note: "",
-  preference: false,
-  date: Date.now(),
-});
+import { set } from "mongoose";
 
 const initialState = {
-  guests: [],
-  currentGuestIndex: 0,
+  allowedGuests: 5,
+  modalGuests: false,
+  currentGuest: 1,
+
+  guests: [
+    {
+      id: 1,
+      name: "",
+      email: "",
+      _id: "",
+      isMainBooker: true,
+      services: [],
+      staff: "any",
+      duration: 0,
+      cost: 0,
+    },
+  ],
+  date: "",
+  time: "",
+  clientPhone: "",
 };
 
 const groupSlice = createSlice({
   name: "group",
   initialState,
   reducers: {
-    setGuests(state, action) {
-      state.guests = action.payload;
-    },
-
     addGuest(state) {
-      state.guests.push(createGuest());
+      if (state.guests.length < state.allowedGuests) {
+        const newId = state.guests.length + 1;
+        state.guests.push({
+          id: newId,
+          name: "",
+          isMainBooker: false,
+          services: [],
+          staff: "any",
+          duration: 0,
+          cost: 0,
+        });
+      }
+    },
+    removeGuest(state, action) {
+      state.guests = state.guests.filter((g) => g.id !== action.payload);
+    },
+    updateGuest(state, action) {
+      const { id, data } = action.payload;
+      const guest = state.guests.find((g) => g.id === id);
+      if (guest) Object.assign(guest, data);
+    },
+    setGroupDate(state, action) {
+      state.date = action.payload;
+    },
+    setGroupTime(state, action) {
+      state.time = action.payload;
+    },
+    setClientPhone(state, action) {
+      state.clientPhone = action.payload;
+    },
+    setAllowedGuests(state, action) {
+      state.allowedGuests = action.payload;
+    },
+    setModalGuest(state, action) {
+      state.modalGuests = action.payload;
+    },
+    setCurrentGuest(state, action) {
+      state.currentGuest = action.payload;
     },
 
-    setGuestIndex(state, action) {
-      state.currentGuestIndex = action.payload;
+    removeGuestById(state, action) {
+      state.guests = state.guests.filter((g) => g.id !== action.payload);
     },
-
-    updateGuestServices(state, action) {
-      const { index, services } = action.payload;
-      if (state.guests[index]) state.guests[index].services = services;
-    },
-
-    updateGuestCost(state, action) {
-      const { index, cost } = action.payload;
-      if (state.guests[index]) state.guests[index].cost = cost;
-    },
-
-    updateGuestDuration(state, action) {
-      const { index, duration } = action.payload;
-      if (state.guests[index]) state.guests[index].duration = duration;
-    },
-
-    updateGuestStaffs(state, action) {
-      const { index, staffs } = action.payload;
-      if (state.guests[index]) state.guests[index].staffs = staffs;
-    },
-
-    updateGuestStaff(state, action) {
-      const { index, staff } = action.payload;
-      if (state.guests[index]) state.guests[index].staff = staff;
-    },
-
-    updateGuestNote(state, action) {
-      const { index, note } = action.payload;
-      if (state.guests[index]) state.guests[index].note = note;
-    },
-
-    updateGuestTime(state, action) {
-      const { index, time } = action.payload;
-      if (state.guests[index]) state.guests[index].time = time;
-    },
-
-    updateGuestDate(state, action) {
-      const { index, date } = action.payload;
-      if (state.guests[index]) state.guests[index].date = date;
-    },
-
-    updateGuestPreference(state, action) {
-      const { index, preference } = action.payload;
-      if (state.guests[index]) state.guests[index].preference = preference;
-    },
+ 
   },
 });
 
 export const {
-  setGuests,
   addGuest,
-  setGuestIndex,
-  updateGuestServices,
-  updateGuestCost,
-  updateGuestDuration,
-  updateGuestStaffs,
-  updateGuestStaff,
-  updateGuestNote,
-  updateGuestTime,
-  updateGuestDate,
-  updateGuestPreference,
+  removeGuest,
+  updateGuest,
+  setGroupDate,
+  setGroupTime,
+  setClientPhone,
+  setAllowedGuests,
+  setModalGuest,
+  setCurrentGuest,
+  removeGuestById,
 } = groupSlice.actions;
-
 export default groupSlice.reducer;

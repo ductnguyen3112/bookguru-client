@@ -1,15 +1,23 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { goBack } from "@/app/helper/helper";
 
 export default function SimpleHeader() {
   const router = useRouter();
+  const pathname = usePathname(); // Get current path
 
   const onClose = () => {
     // Remove "/booking" from the end of the current pathname
-    const newPath = window.location.pathname.replace(/\/booking$/, "");
-    window.location.href = newPath.replace(/\/booking\/[^/]+/, "/");
+    // go back to main page with pathname /v1/[slug]/ remove third segment
+    const segments = pathname.split("/");
+    if (segments.length > 3) {
+      const newPath = segments.slice(0, 3).join("/");
+      window.location.href = newPath;
+    } else {
+      // If there are not enough segments, just go back
+      router.back();
+    }
   };
 
   return (
