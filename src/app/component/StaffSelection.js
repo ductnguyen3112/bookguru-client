@@ -35,7 +35,7 @@ export default function StaffSelection() {
       id: "any",
       staffName: "Any professional",
       note: "Maximum availability",
-      icon: <UserGroupIcon className="w-5 h-5" />,
+      icon: <UserGroupIcon className="w-8 h-8" />,
     },
     ...staffMembers.filter((staff) => staffs.includes(staff.id)),
   ];
@@ -72,15 +72,15 @@ export default function StaffSelection() {
                 }`}
               >
                 {id === "any" && icon ? (
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-50 text-indigo-700 mb-2">
+                  <div className="flex items-center  justify-center w-18 h-18 rounded-full bg-purple-50 text-indigo-900 mb-2">
                     {icon}
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 text-gray-600 mb-2 font-semibold">
+                  <div className="flex items-center text-2xl justify-center w-18 h-18 rounded-full bg-gray-100 text-gray-600 mb-2 font-semibold">
                     {staffName?.charAt(0)}
                   </div>
                 )}
-                <p className="text-sm font-medium text-center text-gray-800">
+                <p className="text-md font-medium text-center text-gray-800">
                   {staffName}
                 </p>
                 {note && (

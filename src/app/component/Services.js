@@ -111,7 +111,7 @@ export default function ServicesPage({ data }) {
               </div>
               <button
                 onClick={() => handleBook(service._id)}
-                className="bg-white text-black px-2 py-1 border border-gray-300 rounded-lg hover:bg-black hover:text-white"
+                className="bg-white text-black px-2 py-1 border border-gray-300 rounded-full hover:bg-black hover:text-white"
               >
                 Book
               </button>

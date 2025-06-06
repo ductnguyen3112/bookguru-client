@@ -187,7 +187,7 @@ export default function SummaryCard() {
           </div>
           <button
             onClick={nextStep}
-            className="w-30 lg:w-full bg-black text-white py-3 rounded-md text-sm font-medium hover:bg-black/80 transition"
+            className="w-30 lg:w-full bg-black text-white py-3 rounded-full text-sm font-medium hover:bg-black/80 transition"
           >
             {buttonValue}
           </button>
