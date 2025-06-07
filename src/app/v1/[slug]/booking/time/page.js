@@ -117,7 +117,7 @@ export default function TimeSelection() {
       <div className="slide-animated">
         {/* Staff Selector */}
         <div className="flex items-center space-x-2 mb-6">
-          <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
             <span className="text-sm font-medium text-gray-700">
               {isAnySelected
                 ? "A"
@@ -127,7 +127,7 @@ export default function TimeSelection() {
           <select
             value={isAnySelected ? "any" : selectedStaff || ""}
             onChange={handleChange}
-            className="text-md text-gray-700 p-1 border border-gray-200 rounded-lg font-bold bg-transparent outline-none"
+            className="text-md text-gray-700 p-2 border border-gray-200 rounded-lg font-bold bg-transparent outline-none"
           >
             <option value="any">Any professional</option>
             {staffs.map((staff) => (
@@ -156,7 +156,7 @@ export default function TimeSelection() {
                 className="flex flex-col items-center focus:outline-none"
               >
                 <div
-                  className={`rounded-2xl w-16 h-16 flex items-center justify-center font-semibold mb-1 ${
+                  className={`rounded-2xl w-16 h-16 flex items-center justify-center text-lg font-semibold mb-1 ${
                     isSelected
                       ? "bg-indigo-600 text-white"
                       : "bg-gray-200 text-gray-700"
