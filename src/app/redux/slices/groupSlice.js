@@ -1,10 +1,12 @@
 // --- Redux Slice: groupBookingSlice.js ---
 import { createSlice } from "@reduxjs/toolkit";
-import { set } from "mongoose";
+
 
 const initialState = {
   allowedGuests: 5,
   modalGuests: false,
+  staffSelection: false,
+  availableStaffs:[],
   currentGuest: 1,
 
   guests: [
@@ -73,6 +75,14 @@ const groupSlice = createSlice({
     removeGuestById(state, action) {
       state.guests = state.guests.filter((g) => g.id !== action.payload);
     },
+    setStaffSelection(state, action) {
+      state.staffSelection = action.payload;
+    },
+    setAvailableStaffs(state, action) {
+      state.availableStaffs = action.payload;
+    } 
+
+
  
   },
 });
@@ -88,5 +98,7 @@ export const {
   setModalGuest,
   setCurrentGuest,
   removeGuestById,
+  setStaffSelection,
+  setAvailableStaffs,
 } = groupSlice.actions;
 export default groupSlice.reducer;

@@ -7,6 +7,7 @@ const initialState = {
   isLoggedIn: false,
   bookSelection:false,
 
+
   selected: {
     staffs: [],
     staff: "any",
@@ -103,7 +104,8 @@ const dataSlice = createSlice({
     },
     setBookSelection(state, action) {
       state.bookSelection = action.payload;
-    }
+    },
+
   },
 });
 
@@ -129,5 +131,6 @@ export const {
   addDate,
   setRandomStaff,
   setBookSelection,
+
 } = dataSlice.actions;
 export default dataSlice.reducer;

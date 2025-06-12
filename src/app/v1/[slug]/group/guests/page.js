@@ -12,10 +12,10 @@ import { goBack } from "@/app/helper/helper";
 
 export default function Page() {
   const guests = useSelector((state) => state.group.guests);
-
   const allowedGuests = useSelector((state) => state.group.allowedGuests);
   const dispatch = useDispatch();
   const guestIdCount = guests.length + 1;
+
   const handleAddGuest = () => {
     if (guests.length < allowedGuests) {
       dispatch(setCurrentGuest(guestIdCount));
@@ -30,12 +30,13 @@ export default function Page() {
     dispatch(setCurrentGuest(id));
     goBack();
   };
+
   const removeGuest = (id) => {
     dispatch(removeGuestById(id));
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 ">
+    <div className="max-w-2xl mx-auto px-4 py-6">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-semibold tracking-tight">
@@ -47,13 +48,13 @@ export default function Page() {
       </div>
 
       {/* Guest List */}
-      <div className="space-y-4">
+      <div className="space-y-4 relative z-0 overflow-visible">
         {guests
           .filter((guest) => guest.name && guest.name.trim() !== "")
           .map((guest, index) => (
             <div
               key={guest.id}
-              className="flex items-center justify-between p-4 border border-gray-200 rounded-xl slide-animated"
+              className="relative flex items-center justify-between p-4 border border-gray-200 rounded-xl"
             >
               <div className="flex items-center space-x-4">
                 <img
@@ -74,39 +75,41 @@ export default function Page() {
                   </p>
                 </div>
               </div>
-              <Menu as="div" className="relative inline-block text-left">
-                <div>
-                  <MenuButton className="flex items-center rounded-full  text-gray-500 hover:text-gray-600 ">
-                    <span className="sr-only">Open options</span>
-                    <EllipsisVerticalIcon
-                      aria-hidden="true"
-                      className="size-6"
-                    />
-                  </MenuButton>
-                </div>
 
-                <MenuItems
-                  transition
-                  className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black/5 transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
-                >
+              {/* Action Menu */}
+              <Menu as="div" className="relative inline-block text-left z-10">
+                <MenuButton className="flex items-center rounded-full text-gray-500 hover:text-gray-600">
+                  <span className="sr-only">Open options</span>
+                  <EllipsisVerticalIcon className="w-6 h-6" aria-hidden="true" />
+                </MenuButton>
+
+                <MenuItems className="absolute right-0 z-50 mt-2 w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
                   <div className="py-1">
                     <MenuItem>
-                      <a
-                        onClick={() => handleEditService(guest.id)}
-                        className="block p-4 text-lg text-gray-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
-                      >
-                        Edit service
-                      </a>
+                      {({ active }) => (
+                        <a
+                          onClick={() => handleEditService(guest.id)}
+                          className={`block w-full text-left p-4 font-bold text-md ${
+                            active ? "bg-gray-100 text-gray-900" : "text-gray-700"
+                          }`}
+                        >
+                          Edit service
+                        </a>
+                      )}
                     </MenuItem>
 
                     {index > 0 && (
                       <MenuItem>
-                        <a
-                          onClick={() => removeGuest(guest.id)}
-                          className="block p-4 text-lg text-red-700 data-focus:bg-gray-100 data-focus:text-gray-900 data-focus:outline-hidden"
-                        >
-                          Remove guest
-                        </a>
+                        {({ active }) => (
+                          <a
+                            onClick={() => removeGuest(guest.id)}
+                            className={`block w-ful font-bold text-left p-4 text-md ${
+                              active ? "bg-gray-100 text-red-800" : "text-red-700"
+                            }`}
+                          >
+                            Remove guest
+                          </a>
+                        )}
                       </MenuItem>
                     )}
                   </div>
@@ -119,9 +122,9 @@ export default function Page() {
       {/* Add Guest Button */}
       <div className="mt-6">
         <button
-          onClick={() => handleAddGuest()}
-          className="flex items-center border border-gray-300 text-sm px-4 py-2 rounded-full font-medium hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleAddGuest}
           disabled={guests.length >= allowedGuests}
+          className="flex items-center border border-gray-300 text-sm px-4 py-2 rounded-full font-medium hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span className="text-xl mr-2">＋</span> Add guest
         </button>

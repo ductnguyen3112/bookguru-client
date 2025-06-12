@@ -66,8 +66,8 @@ export default function GroupSummary() {
     const mainStep = window.location.href.split("/").pop().split("#")[0];
 
     switch (mainStep) {
-      case "staff":
-        router.push(`/v1/${domain}/group/time`);
+      case "guests":
+        router.push(`/v1/${domain}/group/staff`);
         break;
       case "time":
         if (!time || time === "null" || time === "undefined") {
@@ -173,7 +173,7 @@ export default function GroupSummary() {
           </div>
           <button
             onClick={nextStep}
-            className="w-30 lg:w-full bg-black text-white py-3 rounded-md text-sm font-medium hover:bg-black/80 transition"
+            className="w-30 lg:w-full bg-black text-white py-3 rounded-full text-sm font-medium hover:bg-black/80 transition"
           >
             {buttonValue}
           </button>
