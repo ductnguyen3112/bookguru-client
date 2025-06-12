@@ -9,7 +9,7 @@ export default function GroupServices() {
   
 
   const businessData = useSelector((state) => state.data.business);
-  console.log("Business Data:", businessData);
+
   const guests = useSelector((state) => state.group.guests);
   const currentGuestId = useSelector((state) => state.group.currentGuest);
   const clientData = useSelector((state) => state.data.clientData.client);

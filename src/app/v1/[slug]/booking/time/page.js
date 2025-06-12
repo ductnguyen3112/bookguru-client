@@ -3,7 +3,12 @@ import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
 import moment from "moment-timezone";
-import { addTime, addStaff, addDate, setPreference } from "@/app/redux/slices/dataSlice";
+import {
+  addTime,
+  addStaff,
+  addDate,
+  setPreference,
+} from "@/app/redux/slices/dataSlice";
 
 export default function TimeSelection() {
   const dispatch = useDispatch();
@@ -60,8 +65,7 @@ export default function TimeSelection() {
 
         setTimeSlots(response.data.slots || []);
       } catch (err) {
-        if (axios.isCancel(err)) return;
-        setError(err.response?.data?.error || err.message);
+        setMessage(err);
       } finally {
         setLoading(false);
       }
@@ -165,9 +169,7 @@ export default function TimeSelection() {
                 >
                   {dateObj.day}
                 </div>
-                <span className="text-xs text-gray-600">
-                  {dateObj.dayName}
-                </span>
+                <span className="text-xs text-gray-600">{dateObj.dayName}</span>
               </button>
             );
           })}

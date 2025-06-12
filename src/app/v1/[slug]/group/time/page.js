@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
@@ -9,74 +10,78 @@ export default function Page() {
   const dispatch = useDispatch();
   const businessData = useSelector((state) => state.data.business);
   const guests = useSelector((state) => state.group.guests);
-  console.log(useSelector((state) => state.group));
+  const selectedDateRaw = useSelector((state) => state.group.date);
+  const [message, setMessage] = useState("");
 
   const timezone = businessData.businessTimezone;
-  const selectedDateRaw = useSelector((state) => state.group.date);
 
+  // keep a Moment for UI; default to today if none in store
   const [selectedDate, setSelectedDate] = useState(
-    selectedDateRaw ? moment(selectedDateRaw) : moment()
+    selectedDateRaw ? moment(selectedDateRaw, "YYYY-MM-DD") : moment()
   );
   const [selectedTime, setSelectedTime] = useState(null);
-  const selectedDateUTC = selectedDate.clone().utc().toISOString();
 
+  // the array of ISO strings (slot.start)
   const [timeSlots, setTimeSlots] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Fetch whenever guests, selectedDate, or businessURL changes
   useEffect(() => {
-    if (!selectedDateUTC || !guests.length || !businessData?.businessURL) return;
+    if (!guests.length || !businessData.businessURL) return;
 
-    const controller = new AbortController();
+    const aborter = new AbortController();
+    const fetchSlots = async () => {
+      setLoading(true);
+      setError(null);
 
-    async function fetchTimeSlots() {
       try {
-        setLoading(true);
-
         const payload = {
           domain: businessData.businessURL,
-          date: selectedDateUTC,
+          date: selectedDate.format("YYYY-MM-DD"),
           guests,
         };
 
-        const response = await axios.post("/api/booking/group-time", payload, {
-          signal: controller.signal,
+        const res = await axios.post("/api/booking/group-time", payload, {
+          signal: aborter.signal,
         });
 
-        setTimeSlots(response.data.availableTimes || []);
+        if (res.data.success) {
+          const starts = (res.data.slots || []).map((s) => s.start);
+          setTimeSlots(starts);
+        } else {
+          setTimeSlots([]);
+          setError(res.data.message || "No slots returned");
+          setMessage(res.data.message || "No slots available for this date");
+        }
       } catch (err) {
-        if (axios.isCancel(err)) return;
-        setError(err.response?.data?.error || err.message);
+        if (!axios.isCancel(err)) {
+          setError(err.response?.data?.error || err.message);
+        }
       } finally {
         setLoading(false);
       }
-    }
+    };
 
-    fetchTimeSlots();
+    fetchSlots();
+    return () => aborter.abort();
+  }, [guests, businessData.businessURL, selectedDate]);
 
-    return () => controller.abort();
-  }, [guests, selectedDateUTC, businessData?.businessURL]);
-
-  if (error) return <div>Error: {error}</div>;
-
+  // build a 30-day horizontal picker
   const dateRange = Array.from({ length: 30 }, (_, i) => {
     const d = moment().add(i, "days");
-    return {
-      date: d,
-      day: d.date(),
-      dayName: d.format("ddd"),
-    };
+    return { key: d.format("YYYY-MM-DD"), momentObj: d };
   });
 
   const handleDateClick = (d) => {
-    const date = moment(d).format("YYYY-MM-DD");
     setSelectedDate(d);
-    dispatch(setGroupDate(date));
+    dispatch(setGroupDate(d.format("YYYY-MM-DD")));
+    setSelectedTime(null);
   };
 
-  const handleTimeSelect = (time) => {
-    setSelectedTime(time);
-    dispatch(setGroupTime(time));
+  const handleTimeSelect = (isoStart) => {
+    setSelectedTime(isoStart);
+    dispatch(setGroupTime(isoStart));
   };
 
   return (
@@ -86,6 +91,7 @@ export default function Page() {
       </nav>
 
       <h1 className="text-2xl font-bold mb-6">Select group time</h1>
+
       <div className="slide-animated">
         {/* Month label */}
         <div className="mb-4">
@@ -96,25 +102,25 @@ export default function Page() {
 
         {/* Horizontal date picker */}
         <div className="flex items-center space-x-4 mb-6 overflow-x-auto">
-          {dateRange.map((dateObj, index) => {
-            const isSelected = selectedDate.isSame(dateObj.date, "day");
+          {dateRange.map(({ key, momentObj }) => {
+            const isSel = selectedDate.isSame(momentObj, "day");
             return (
               <button
-                key={index}
-                onClick={() => handleDateClick(dateObj.date)}
+                key={key}
+                onClick={() => handleDateClick(momentObj)}
                 className="flex flex-col items-center focus:outline-none"
               >
                 <div
                   className={`rounded-2xl w-16 h-16 flex items-center justify-center text-lg font-semibold mb-1 ${
-                    isSelected
+                    isSel
                       ? "bg-indigo-600 text-white"
                       : "bg-gray-200 text-gray-700"
                   }`}
                 >
-                  {dateObj.day}
+                  {momentObj.date()}
                 </div>
                 <span className="text-xs text-gray-600">
-                  {dateObj.dayName}
+                  {momentObj.format("ddd")}
                 </span>
               </button>
             );
@@ -126,21 +132,22 @@ export default function Page() {
           {loading ? (
             <p className="text-gray-500">Loading...</p>
           ) : timeSlots.length > 0 ? (
-            timeSlots.map((slot, index) => (
-              <button
-                key={index}
-                onClick={() => handleTimeSelect(slot.time)}
-                className={`w-full text-left border rounded-md py-4 px-4 hover:bg-gray-50 focus:outline-none ${
-                  selectedTime === slot.time
-                    ? "border-indigo-600"
-                    : "border-gray-200"
-                }`}
-              >
-                {moment(slot.time).tz(timezone).format("hh:mm A")}
-              </button>
-            ))
+            timeSlots.map((iso, idx) => {
+              const isSel = selectedTime === iso;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => handleTimeSelect(iso)}
+                  className={`w-full text-left border rounded-md py-4 px-4 hover:bg-gray-50 focus:outline-none ${
+                    isSel ? "border-indigo-600" : "border-gray-200"
+                  }`}
+                >
+                  {moment(iso).tz(timezone).format("hh:mm A")}
+                </button>
+              );
+            })
           ) : (
-            <p className="text-gray-500">No available time slots for the group.</p>
+            <p className="text-gray-500">{message}</p>
           )}
         </div>
       </div>
