@@ -29,7 +29,7 @@ export default function BookSelection() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="relative w-full max-w-md bg-white rounded-xl shadow-lg p-6 sm:p-8">
+      <div className="relative w-full max-w-md bg-white rounded-xl shadow-lg p-6 sm:p-8 slide-up">
         <button
           className="absolute top-4 right-4 text-gray-400 hover:text-black text-2xl"
           onClick={onClose}

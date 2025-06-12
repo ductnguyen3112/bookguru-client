@@ -6,12 +6,14 @@ import { updateGuest } from "../redux/slices/groupSlice";
 
 export default function GroupServices() {
   const dispatch = useDispatch();
+  
 
   const businessData = useSelector((state) => state.data.business);
+  console.log("Business Data:", businessData);
   const guests = useSelector((state) => state.group.guests);
   const currentGuestId = useSelector((state) => state.group.currentGuest);
   const clientData = useSelector((state) => state.data.clientData.client);
-  const guestModal = useSelector((state) => state.group.modalGuests);
+
 
   const guest = guests.find((g) => g.id === currentGuestId);
   const selectedServices = guest?.services || [];

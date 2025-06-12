@@ -69,12 +69,13 @@ export default function GroupSummary() {
       case "guests":
         router.push(`/v1/${domain}/group/staff`);
         break;
-      case "time":
-        if (!time || time === "null" || time === "undefined") {
-          toast.error("Please select a time");
+      case "staff":
+        if (guests.length === 1) {
+          toast.error("Please add at least 2 guest.");
           return;
         }
-        router.push(`/v1/${domain}/group/overview`);
+        
+       router.push(`/v1/${domain}/group/time`);
         break;
       case "overview":
         setButtonValue("Processing...");

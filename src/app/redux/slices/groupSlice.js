@@ -1,14 +1,12 @@
 // --- Redux Slice: groupBookingSlice.js ---
 import { createSlice } from "@reduxjs/toolkit";
 
-
 const initialState = {
   allowedGuests: 5,
   modalGuests: false,
   staffSelection: false,
-  availableStaffs:[],
-  currentGuest: 1,
 
+  currentGuest: 1,
   guests: [
     {
       id: 1,
@@ -17,12 +15,13 @@ const initialState = {
       _id: "",
       isMainBooker: true,
       services: [],
+      staffs: [],
       staff: "any",
       duration: 0,
       cost: 0,
     },
   ],
-  date: "",
+  date: new Date().toISOString().split("T")[0], // Default to today
   time: "",
   clientPhone: "",
 };
@@ -39,7 +38,7 @@ const groupSlice = createSlice({
           name: "",
           isMainBooker: false,
           services: [],
-          staff: "any",
+          staff: "",
           duration: 0,
           cost: 0,
         });
@@ -51,8 +50,30 @@ const groupSlice = createSlice({
     updateGuest(state, action) {
       const { id, data } = action.payload;
       const guest = state.guests.find((g) => g.id === id);
-      if (guest) Object.assign(guest, data);
+
+      if (guest) {
+        Object.assign(guest, data);
+
+        // ✅ Automatically filter staffs that are common across all selected services
+        if (Array.isArray(data.services) && data.services.length > 0) {
+          // Start with the staff list of the first service
+          let commonStaffs = data.services[0].staff || [];
+
+          // Intersect with staff lists from remaining services
+          for (let i = 1; i < data.services.length; i++) {
+            const serviceStaff = data.services[i].staff || [];
+            commonStaffs = commonStaffs.filter((id) =>
+              serviceStaff.includes(id)
+            );
+          }
+
+          guest.staffs = [...new Set(commonStaffs.map(String))];
+        } else {
+          guest.staffs = [];
+        }
+      }
     },
+
     setGroupDate(state, action) {
       state.date = action.payload;
     },
@@ -78,12 +99,14 @@ const groupSlice = createSlice({
     setStaffSelection(state, action) {
       state.staffSelection = action.payload;
     },
-    setAvailableStaffs(state, action) {
-      state.availableStaffs = action.payload;
-    } 
+    updateGuestStaff(state, action) {
+      const { guestId, staff } = action.payload;
+      const guest = state.guests.find((g) => g.id === guestId);
 
-
- 
+      if (guest) {
+        guest.staff = staff;
+      }
+    },
   },
 });
 
@@ -99,6 +122,6 @@ export const {
   setCurrentGuest,
   removeGuestById,
   setStaffSelection,
-  setAvailableStaffs,
+  updateGuestStaff,
 } = groupSlice.actions;
 export default groupSlice.reducer;

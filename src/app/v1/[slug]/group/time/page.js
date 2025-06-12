@@ -3,24 +3,19 @@ import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
 import moment from "moment-timezone";
-import { addTime, addStaff, addDate, setPreference } from "@/app/redux/slices/dataSlice";
+import { setGroupTime, setGroupDate } from "@/app/redux/slices/groupSlice";
 
-export default function TimeSelection() {
+export default function Page() {
   const dispatch = useDispatch();
   const businessData = useSelector((state) => state.data.business);
+  const guests = useSelector((state) => state.group.guests);
+  console.log(useSelector((state) => state.group));
 
-  const selectedData = useSelector((state) => state.data.selected);
-  const selectedStaff = selectedData.staff;
-  const duration = selectedData.duration;
   const timezone = businessData.businessTimezone;
-  const preference = selectedData.preference;
-  const staffs = useSelector((state) => state.data.business?.staffs || []);
-
-  const preferenceStaff = staffs.find((s) => s._id === selectedStaff);
-  const isAnySelected = !preference || !selectedStaff;
+  const selectedDateRaw = useSelector((state) => state.group.date);
 
   const [selectedDate, setSelectedDate] = useState(
-    selectedData.date ? moment(selectedData.date) : moment()
+    selectedDateRaw ? moment(selectedDateRaw) : moment()
   );
   const [selectedTime, setSelectedTime] = useState(null);
   const selectedDateUTC = selectedDate.clone().utc().toISOString();
@@ -30,7 +25,7 @@ export default function TimeSelection() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!selectedDateUTC || !duration || !businessData?.businessURL) return;
+    if (!selectedDateUTC || !guests.length || !businessData?.businessURL) return;
 
     const controller = new AbortController();
 
@@ -41,24 +36,14 @@ export default function TimeSelection() {
         const payload = {
           domain: businessData.businessURL,
           date: selectedDateUTC,
-          duration,
+          guests,
         };
 
-        if (!selectedStaff) {
-          payload.staffs = staffs.map((s) => s._id);
-        } else {
-          payload.staff = selectedStaff;
-        }
-
-        const response = await axios.post("/api/booking/get-time", payload, {
+        const response = await axios.post("/api/booking/group-time", payload, {
           signal: controller.signal,
         });
 
-        if (!selectedStaff && response.data.staff) {
-          dispatch(addStaff(response.data.staff));
-        }
-
-        setTimeSlots(response.data.slots || []);
+        setTimeSlots(response.data.availableTimes || []);
       } catch (err) {
         if (axios.isCancel(err)) return;
         setError(err.response?.data?.error || err.message);
@@ -70,7 +55,7 @@ export default function TimeSelection() {
     fetchTimeSlots();
 
     return () => controller.abort();
-  }, [selectedStaff, selectedDateUTC, duration, businessData?.businessURL]);
+  }, [guests, selectedDateUTC, businessData?.businessURL]);
 
   if (error) return <div>Error: {error}</div>;
 
@@ -86,59 +71,22 @@ export default function TimeSelection() {
   const handleDateClick = (d) => {
     const date = moment(d).format("YYYY-MM-DD");
     setSelectedDate(d);
-    dispatch(addDate(date));
+    dispatch(setGroupDate(date));
   };
 
   const handleTimeSelect = (time) => {
     setSelectedTime(time);
-    dispatch(addTime(time));
-  };
-
-  const handleChange = (e) => {
-    const staffId = e.target.value;
-
-    if (staffId === "any") {
-      dispatch(addStaff(null));
-      dispatch(setPreference(false));
-      setSelectedTime(null);
-    } else {
-      dispatch(addStaff(staffId));
-      dispatch(setPreference(true));
-      setSelectedTime(null);
-    }
+    dispatch(setGroupTime(time));
   };
 
   return (
     <div className="w-full mx-auto p-4">
       <nav className="text-sm text-gray-500 mb-3">
-        <span>Services &gt; Professional &gt; Time &gt; Confirm</span>
+        <span>Guests &gt; Services &gt; Time &gt; Confirm</span>
       </nav>
 
-      <h1 className="text-2xl font-bold mb-6">Select services</h1>
+      <h1 className="text-2xl font-bold mb-6">Select group time</h1>
       <div className="slide-animated">
-        {/* Staff Selector */}
-        <div className="flex items-center space-x-2 mb-6">
-          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-            <span className="text-sm font-medium text-gray-700">
-              {isAnySelected
-                ? "A"
-                : preferenceStaff?.staffName?.charAt(0) || "?"}
-            </span>
-          </div>
-          <select
-            value={isAnySelected ? "any" : selectedStaff || ""}
-            onChange={handleChange}
-            className="text-md text-gray-700 p-2 border border-gray-200 rounded-lg font-bold bg-transparent outline-none"
-          >
-            <option value="any">Any professional</option>
-            {staffs.map((staff) => (
-              <option key={staff._id} value={staff._id}>
-                {staff.staffName}
-              </option>
-            ))}
-          </select>
-        </div>
-
         {/* Month label */}
         <div className="mb-4">
           <p className="text-gray-500 font-medium">
@@ -181,18 +129,18 @@ export default function TimeSelection() {
             timeSlots.map((slot, index) => (
               <button
                 key={index}
-                onClick={() => handleTimeSelect(slot.start)}
+                onClick={() => handleTimeSelect(slot.time)}
                 className={`w-full text-left border rounded-md py-4 px-4 hover:bg-gray-50 focus:outline-none ${
-                  selectedTime === slot.start
+                  selectedTime === slot.time
                     ? "border-indigo-600"
                     : "border-gray-200"
                 }`}
               >
-                {moment(slot.start).tz(timezone).format("hh:mm A")}
+                {moment(slot.time).tz(timezone).format("hh:mm A")}
               </button>
             ))
           ) : (
-            <p className="text-gray-500">No available time slots.</p>
+            <p className="text-gray-500">No available time slots for the group.</p>
           )}
         </div>
       </div>
