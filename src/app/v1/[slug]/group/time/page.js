@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
 import moment from "moment-timezone";
@@ -15,6 +15,10 @@ export default function Page() {
   const businessData = useSelector((state) => state.data.business);
   const guests = useSelector((state) => state.group.guests);
   const selectedDateRaw = useSelector((state) => state.group.date);
+  
+  // ✅ Get selected time from Redux store
+  const selectedTimeFromStore = useSelector((state) => state.group.time);
+  
   const [message, setMessage] = useState("");
 
   const timezone = businessData.businessTimezone;
@@ -23,16 +27,37 @@ export default function Page() {
   const [selectedDate, setSelectedDate] = useState(
     selectedDateRaw ? moment(selectedDateRaw, "YYYY-MM-DD") : moment()
   );
-  const [selectedTime, setSelectedTime] = useState(null);
+  
+  // ✅ Use Redux store as source of truth for selected time
+  const [selectedTime, setSelectedTime] = useState(selectedTimeFromStore);
 
   // the array of ISO strings (slot.start)
   const [timeSlots, setTimeSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch whenever guests, selectedDate, or businessURL changes
+  // ✅ Sync local state with Redux store when store changes
   useEffect(() => {
-    if (!guests.length || !businessData.businessURL) return;
+    setSelectedTime(selectedTimeFromStore);
+  }, [selectedTimeFromStore]);
+
+  // ✅ Create stable references to prevent unnecessary re-fetches
+  const guestsStableRef = React.useMemo(() => {
+    return guests.map(guest => ({
+      id: guest._id,
+      services: guest.services,
+      staff: guest.staff,
+      duration: guest.duration,
+      staffs: guest.staffs
+    }));
+  }, [guests.map(g => `${g.id}-${g.services?.length}-${g.staff}-${g.duration}`).join(',')]);
+
+  const selectedDateString = selectedDate.format("YYYY-MM-DD");
+
+  // Fetch whenever guests structure, selectedDate, or businessURL changes
+  // ✅ Removed selectedTime from dependencies to prevent reload on time selection
+  useEffect(() => {
+    if (!guestsStableRef.length || !businessData.businessURL) return;
 
     const aborter = new AbortController();
     const fetchSlots = async () => {
@@ -42,17 +67,24 @@ export default function Page() {
       try {
         const payload = {
           domain: businessData.businessURL,
-          date: selectedDate.format("YYYY-MM-DD"),
-          guests,
+          date: selectedDateString,
+          guests: guestsStableRef,
         };
 
         const res = await axios.post("/api/booking/group-time", payload, {
           signal: aborter.signal,
         });
+        
+        console.log("Received time slots:", res.data);
 
         if (res.data.success) {
           const starts = (res.data.slots || []).map((s) => s.start);
           setTimeSlots(starts);
+          
+          
+
+
+       
         } else {
           setTimeSlots([]);
           setError(res.data.message || "No slots returned");
@@ -69,7 +101,7 @@ export default function Page() {
 
     fetchSlots();
     return () => aborter.abort();
-  }, [guests, businessData.businessURL, selectedDate]);
+  }, [guestsStableRef, businessData.businessURL, selectedDateString]);
 
   // build a 30-day horizontal picker
   const dateRange = Array.from({ length: 30 }, (_, i) => {
@@ -77,34 +109,41 @@ export default function Page() {
     return { key: d.format("YYYY-MM-DD"), momentObj: d };
   });
 
-  const handleDateClick = (d) => {
+  const handleDateClick = useCallback((d) => {
     setSelectedDate(d);
     dispatch(setGroupDate(d.format("YYYY-MM-DD")));
+    
+    // ✅ Clear selected time when date changes
     setSelectedTime(null);
-  };
+    dispatch(setGroupTime(null));
+  }, [dispatch]);
 
-  const handleTimeSelect = (isoStart) => {
+  const handleTimeSelect = useCallback((isoStart) => {
+    // ✅ Update both local state and Redux store
     setSelectedTime(isoStart);
     dispatch(setGroupTime(isoStart));
 
-    // for each guest, compute its own endTime and dispatch an update
-    guests.forEach((guest) => {
+    // ✅ Batch the guest updates to prevent multiple dispatches
+    const guestUpdates = guests.map((guest) => {
       const endTime = moment
-        .utc(isoStart) // treat start as UTC
+        .utc(isoStart)
         .add(guest.duration || 0, "minutes")
-        .toISOString(); // full ISO Z format
+        .toISOString();
 
-      dispatch(
-        updateGuest({
-          id: guest.id,
-          data: {
-            start: isoStart,
-            end: endTime,
-          },
-        })
-      );
+      return {
+        id: guest.id,
+        data: {
+          start: isoStart,
+          end: endTime,
+        },
+      };
     });
-  };
+
+    // Dispatch all updates at once
+    guestUpdates.forEach(update => {
+      dispatch(updateGuest(update));
+    });
+  }, [dispatch, guests]);
 
   return (
     <div className="w-full mx-auto p-4">

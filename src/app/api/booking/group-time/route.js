@@ -1,4 +1,4 @@
-// src/app/api/group/time/route.js
+// src/app/api/booking/group-time/route.js
 import { connect } from "@/app/dbConfig/dbConfig";
 import { NextResponse } from "next/server";
 import Business from "@/app/model/businessModel";
@@ -11,200 +11,276 @@ connect();
 
 export async function POST(req) {
   try {
-    // Parse incoming JSON: domain (business URL), guests array, and target date
     const { domain, guests, date } = await req.json();
+    console.log("Received data:", { domain, guests, date });
 
-    // 1) Lookup business by its businessURL to get its timezone
+    // 1) Business & timezone
     const business = await Business.findOne({ businessURL: domain });
     if (!business) {
-      return NextResponse.json(
-        { error: "Business not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
     const tz = business.businessTimezone;
     const weekday = moment.tz(date, tz).format("dddd");
 
-    // 2) Compute groupDuration: the longest single service duration among all guests
+    // 2) Group duration
     const groupDuration = guests.reduce(
-      (m, g) => Math.max(m, Number(g.duration) || 0),
+      (max, g) => Math.max(max, Number(g.duration) || 0),
       0
     );
     if (groupDuration <= 0) {
-      return NextResponse.json(
-        { error: "Invalid guest durations" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid guest durations" }, { status: 400 });
     }
 
-    // 3) Prepare day boundaries (UTC ISO strings) and "now" in business timezone
-    const dayStart = moment.tz(date, tz).startOf("day").utc().toISOString();
-    const dayEnd = moment.tz(date, tz).endOf("day").utc().toISOString();
-    const now = moment.tz(tz);
+    // 3) Time helpers
+    const now     = moment.tz(tz);
     const isToday = moment.tz(date, tz).isSame(now, "day");
-    const buffer = 15; // minutes lead time
-    const step = 15;   // minutes increment
+    const buffer  = 15; // min lead
+    const step    = 15; // slot increments
 
-    // 4) Build each staff’s free-slot list
-    const staffSlots = {};
+    // 4) Separate specific vs any
+    const specificStaffGuests = guests.filter(g => g.staff && g.staff !== "any");
+    const anyStaffGuests      = guests.filter(g => !g.staff || g.staff === "any");
 
-    for (const guest of guests) {
-      let staffId = guest.staff;
+    // --- NEW: if everyone is “any”, just assign each one in turn to a **distinct** best staff ---
+    if (anyStaffGuests.length === guests.length) {
+      console.log("All guests = any → assigning distinct best-staff to each");
 
-      // 4.a) If guest.staff is "any", pick the staff with the most free slots
-      if (!staffId || staffId === "any") {
-        const candidates = Array.isArray(guest.staffs) ? guest.staffs : [];
-        if (candidates.length === 0) {
-          console.warn(`No candidate list for guest ${guest.id}, skipping`);
-          continue;
-        }
+      // Build a unique pool of all candidates
+      let pool = Array.from(
+        new Set(anyStaffGuests.flatMap(g => Array.isArray(g.staffs) ? g.staffs : []))
+      );
+      if (pool.length === 0) {
+        return NextResponse.json({
+          success: true,
+          groupDuration,
+          slots: [],
+          guests,
+          message: "No staff candidates found",
+        });
+      }
 
-        let bestStaff = null;
-        let bestCount = -1;
+      const staffAvailability = new Map();
+      const assignedStaff     = [];
 
-        for (const sid of candidates) {
-          const doc = await Staff.findById(sid);
-          if (!doc) continue;
-          const sched = doc.staffSchedule?.[weekday];
+      // For each guest, pick from `pool` the staff with the most free slots
+      for (const guest of anyStaffGuests) {
+        let best = null, bestCount = -1;
+
+        for (const staffId of pool) {
+          const staffDoc = await Staff.findById(staffId);
+          if (!staffDoc) continue;
+          const sched = staffDoc.staffSchedule?.[weekday];
           if (!sched?.isWork) continue;
 
-          // compute available-slot count for this staff
-          const startTime = moment.tz(date, tz)
-            .set({
-              hour: +sched.start.split(":")[0],
-              minute: +sched.start.split(":")[1],
-              second: 0, millisecond: 0
-            });
-          const endTime = moment.tz(date, tz)
-            .set({
-              hour: +sched.end.split(":")[0],
-              minute: +sched.end.split(":")[1],
-              second: 0, millisecond: 0
-            });
-          const dayAppts = await Appointment.find({
-            businessId: business._id,
-            staff: sid,
-            start: { $gte: dayStart, $lte: dayEnd }
-          });
-
-          let count = 0;
-          let cursor = startTime.clone();
-          while (cursor.clone().add(groupDuration, "minutes").isSameOrBefore(endTime)) {
-            if (!isToday || cursor.isAfter(now.clone().add(buffer, "minutes"))) {
-              const slotEnd = cursor.clone().add(groupDuration, "minutes");
-              const conflict = dayAppts.some(a => {
-                if (a.status === "canceled") return false;
-                const aS = moment.tz(a.start, tz);
-                const aE = moment.tz(a.end, tz);
-                return cursor.isBefore(aE) && slotEnd.isAfter(aS);
-              });
-              if (!conflict) count++;
-            }
-            cursor.add(step, "minutes");
+          // cache availability
+          if (!staffAvailability.has(staffId)) {
+            const slots = await getStaffAvailableSlots(
+              staffId, business._id, date, tz, sched,
+              groupDuration, isToday, now, buffer, step
+            );
+            staffAvailability.set(staffId, slots);
           }
 
+          const count = staffAvailability.get(staffId).length;
           if (count > bestCount) {
             bestCount = count;
-            bestStaff = sid;
+            best = staffId;
           }
         }
 
-        if (!bestStaff) {
-          console.warn(`No working candidates for guest ${guest.id}, skipping`);
+        if (!best) {
+          console.warn(`No staff left for guest ${guest.id}`);
           continue;
         }
 
-        staffId = bestStaff;
-        guest.staff = bestStaff;
+        // assign & remove from pool
+        guest.staff = best;
+        assignedStaff.push(best);
+        pool = pool.filter(id => id !== best);
       }
 
-      // 4.b) Load the assigned staff document
-      const staff = await Staff.findById(staffId);
-      if (!staff) {
-        console.warn(`Staff ${staffId} not found, skipping`);
-        continue;
+      // If nobody got assigned, bail
+      if (assignedStaff.length === 0) {
+        return NextResponse.json({
+          success: true,
+          groupDuration,
+          slots: [],
+          guests,
+          message: "Could not assign any staff",
+        });
       }
 
-      // 4.c) Pull that staff’s schedule for this weekday
-      const sched = staff.staffSchedule?.[weekday];
+      // Intersect availability across all distinct staff
+      let common = staffAvailability.get(assignedStaff[0]) || [];
+      for (let i = 1; i < assignedStaff.length; i++) {
+        const slots = staffAvailability.get(assignedStaff[i]) || [];
+        common = common.filter(s => slots.includes(s));
+      }
 
-      // 4.d) If not working, return error with staff name
-      if (!sched?.isWork) {
+      const slots = common.map(startISO => ({
+        start: startISO,
+        end: moment(startISO).add(groupDuration, "minutes").toISOString()
+      }));
+
+      return NextResponse.json({
+        message: "Distinct staff assigned to each guest",
+        success: true,
+        guests,
+        groupDuration,
+        slots,
+      });
+    }
+
+    // --- mixed/specific logic (unchanged) ---
+    const staffAvailability = new Map();
+    const assignedStaff     = new Set();
+
+    // 4b) First, lock in any specific assignments
+    for (const g of specificStaffGuests) {
+      const sid = g.staff;
+      assignedStaff.add(sid);
+
+      const doc   = await Staff.findById(sid);
+      const sched = doc?.staffSchedule?.[weekday];
+      if (!doc || !sched?.isWork) {
         return NextResponse.json(
-          { message: `${staff.staffName} is not available on this date` },
+          { success: false, message: `${doc?.staffName || sid} unavailable on ${weekday}` },
           { status: 200 }
         );
       }
-
-      // 4.e) Generate free slots for this staff
-      let cursor = moment.tz(date, tz)
-        .set({
-          hour: +sched.start.split(":")[0],
-          minute: +sched.start.split(":")[1],
-          second: 0, millisecond: 0
-        });
-      const finish = moment.tz(date, tz)
-        .set({
-          hour: +sched.end.split(":")[0],
-          minute: +sched.end.split(":")[1],
-          second: 0, millisecond: 0
-        });
-      const appts = await Appointment.find({
-        businessId: business._id,
-        staff: staffId,
-        start: { $gte: dayStart, $lte: dayEnd }
-      });
-
-      const slots = [];
-      while (cursor.clone().add(groupDuration, "minutes").isSameOrBefore(finish)) {
-        if (!isToday || cursor.isAfter(now.clone().add(buffer, "minutes"))) {
-          const slotEnd = cursor.clone().add(groupDuration, "minutes");
-          const conflict = appts.some(a => {
-            if (a.status === "canceled") return false;
-            const aS = moment.tz(a.start, tz);
-            const aE = moment.tz(a.end, tz);
-            return cursor.isBefore(aE) && slotEnd.isAfter(aS);
-          });
-          if (!conflict) {
-            slots.push(cursor.toISOString());
-          }
-        }
-        cursor.add(step, "minutes");
-      }
-
-      staffSlots[staffId] = slots;
+      const slots = await getStaffAvailableSlots(
+        sid, business._id, date, tz, sched,
+        groupDuration, isToday, now, buffer, step
+      );
+      staffAvailability.set(sid, slots);
     }
 
-    // 5) Intersect all staff slot lists to find common times
-    const allStaffIds = Object.keys(staffSlots);
-    if (allStaffIds.length === 0) {
+    // 4c) Then assign each “any” guest a distinct best staff
+    for (const g of anyStaffGuests) {
+      const candidates = (Array.isArray(g.staffs) ? g.staffs : [])
+                             .filter(id => !assignedStaff.has(id));
+      let best = null, bestCount = -1;
+
+      // if no unassigned left, fall back to original
+      const pool = candidates.length ? candidates : (Array.isArray(g.staffs) ? g.staffs : []);
+
+      for (const sid of pool) {
+        const doc   = await Staff.findById(sid);
+        const sched = doc?.staffSchedule?.[weekday];
+        if (!doc || !sched?.isWork) continue;
+
+        if (!staffAvailability.has(sid)) {
+          const slots = await getStaffAvailableSlots(
+            sid, business._id, date, tz, sched,
+            groupDuration, isToday, now, buffer, step
+          );
+          staffAvailability.set(sid, slots);
+        }
+
+        const count = staffAvailability.get(sid).length;
+        if (count > bestCount) {
+          bestCount = count;
+          best = sid;
+        }
+      }
+
+      if (best) {
+        assignedStaff.add(best);
+        g.staff = best;
+      } else {
+        console.warn(`No staff available for guest ${g.id}`);
+      }
+    }
+
+    // 5) Intersect across all assigned staff
+    const allIds = Array.from(staffAvailability.keys());
+    if (allIds.length === 0) {
       return NextResponse.json({
         success: true,
         groupDuration,
         slots: [],
-        guests
+        guests,
+        message: "No staff could be assigned",
       });
     }
-    let common = staffSlots[allStaffIds[0]];
-    for (const sid of allStaffIds.slice(1)) {
-      common = common.filter(start => staffSlots[sid].includes(start));
+    let common = staffAvailability.get(allIds[0]) || [];
+    for (let i = 1; i < allIds.length; i++) {
+      const s = staffAvailability.get(allIds[i]) || [];
+      common = common.filter(t => s.includes(t));
     }
-
-    // 6) Build final result with start/end pairs
     const slots = common.map(startISO => ({
       start: startISO,
       end: moment(startISO).add(groupDuration, "minutes").toISOString()
     }));
 
+
+
     return NextResponse.json({
-      message:      "Common availability for group",
-      success:      true,
+      message: "Common availability for group",
+      success: true,
       guests,
       groupDuration,
       slots,
     });
 
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("Group time API error:", err);
+    return NextResponse.json(
+      { error: err.message || "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+
+// Helper unchanged
+async function getStaffAvailableSlots(
+  staffId, businessId, date, timezone,
+  schedule, duration, isToday, now, buffer, step
+) {
+  try {
+    const [sh, sm] = schedule.start.split(":").map(Number);
+    const [eh, em] = schedule.end  .split(":").map(Number);
+
+    let start = moment.tz(date, timezone).set({ hour: sh, minute: sm, second: 0, millisecond: 0 });
+    const end   = moment.tz(date, timezone).set({ hour: eh, minute: em, second: 0, millisecond: 0 });
+
+    if (isToday) {
+      const min = now.clone().add(buffer, "minutes");
+      if (start.isBefore(min)) {
+        start = min.clone().startOf("minute");
+        const add = step - (start.minute() % step);
+        if (add < step) start.add(add, "minutes");
+      }
+    }
+
+    const dayStart = moment.tz(date, timezone).startOf("day").utc().toISOString();
+    const dayEnd   = moment.tz(date, timezone).endOf("day").utc().toISOString();
+    const appts    = await Appointment.find({
+      businessId,
+      staff: staffId,
+      start: { $gte: dayStart, $lte: dayEnd },
+      status: { $ne: "canceled" }
+    }).sort({ start: 1 });
+
+    const blocked = appts.map(a => ({
+      start: moment.tz(a.start, timezone),
+      end:   moment.tz(a.end,   timezone),
+    }));
+
+    const slots = [];
+    let cursor = start.clone();
+    while (cursor.clone().add(duration, "minutes").isSameOrBefore(end)) {
+      const s = cursor.clone(), e = s.clone().add(duration, "minutes");
+      if (!blocked.some(b => s.isBefore(b.end) && e.isAfter(b.start))) {
+        slots.push(s.utc().toISOString());
+      }
+      cursor.add(step, "minutes");
+    }
+    return slots;
+
+  } catch (e) {
+    console.error(`Error slots for ${staffId}:`, e);
+    return [];
   }
 }

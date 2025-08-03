@@ -24,7 +24,7 @@ const initialState = {
     },
   ],
   date: new Date().toISOString().split("T")[0], // Default to today
-  time: null,
+  time: null, // ✅ Make sure this is properly initialized
   clientPhone: "",
 };
 
@@ -78,9 +78,11 @@ const groupSlice = createSlice({
 
     setGroupDate(state, action) {
       state.date = action.payload;
+      // ✅ Clear time when date changes
+      state.time = null;
     },
     setGroupTime(state, action) {
-      state.time = action.payload;
+      state.time = action.payload; // ✅ Ensure this updates properly
     },
     setClientPhone(state, action) {
       state.clientPhone = action.payload;
@@ -110,6 +112,29 @@ const groupSlice = createSlice({
         guest.staff = staff;
       }
     },
+    
+    // ✅ Add a reset function for debugging
+    resetGroupBooking(state) {
+      return {
+        ...initialState,
+        guests: [
+          {
+            id: 1,
+            name: "",
+            email: "",
+            _id: "",
+            isMainBooker: true,
+            services: [],
+            staffs: [],
+            start: null,
+            end: null,
+            staff: "any",
+            duration: 0,
+            cost: 0,
+          },
+        ],
+      };
+    },
   },
 });
 
@@ -126,5 +151,6 @@ export const {
   removeGuestById,
   setStaffSelection,
   updateGuestStaff,
+  resetGroupBooking,
 } = groupSlice.actions;
 export default groupSlice.reducer;
