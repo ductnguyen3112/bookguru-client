@@ -16,13 +16,15 @@ const initialState = {
       isMainBooker: true,
       services: [],
       staffs: [],
+      start: null,
+      end: null,
       staff: "any",
       duration: 0,
       cost: 0,
     },
   ],
   date: new Date().toISOString().split("T")[0], // Default to today
-  time: "",
+  time: null,
   clientPhone: "",
 };
 
@@ -99,6 +101,7 @@ const groupSlice = createSlice({
     setStaffSelection(state, action) {
       state.staffSelection = action.payload;
     },
+    
     updateGuestStaff(state, action) {
       const { guestId, staff } = action.payload;
       const guest = state.guests.find((g) => g.id === guestId);

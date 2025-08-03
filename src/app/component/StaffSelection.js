@@ -67,16 +67,16 @@ export default function StaffSelection() {
                 onClick={() => selectStaff({ id, staffName, note })}
                 className={`flex flex-col items-center justify-center border rounded-md p-4 cursor-pointer transition-colors aspect-square ${
                   isSelected
-                    ? "border-indigo-700"
+                    ? "border-emerald-700"
                     : "border-gray-300 hover:border-gray-400"
                 }`}
               >
                 {id === "any" && icon ? (
-                  <div className="flex items-center  justify-center w-18 h-18 rounded-full bg-purple-50 text-indigo-900 mb-2">
+                  <div className="flex items-center  justify-center w-18 h-18 rounded-full bg-gray-100 text-emerald-900 mb-2">
                     {icon}
                   </div>
                 ) : (
-                  <div className="flex items-center text-2xl justify-center w-18 h-18 rounded-full bg-gray-100 text-gray-600 mb-2 font-semibold">
+                  <div className="flex items-center text-2xl justify-center w-18 h-18 rounded-full bg-gray-100 text-emerald-900 mb-2 font-semibold">
                     {staffName?.charAt(0)}
                   </div>
                 )}

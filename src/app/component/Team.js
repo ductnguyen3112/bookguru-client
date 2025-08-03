@@ -38,8 +38,8 @@ export default function TeamSection({ data }) {
           {staffs.map((member) => (
             <div key={member._id} className="flex flex-col items-center">
               {/* Circular Avatar */}
-              <div className="w-24 h-24 rounded-full bg-violet-50 flex items-center justify-center">
-                <span className="text-violet-600 text-2xl font-semibold">
+              <div className="w-24 h-24 rounded-full bg-emerald-50 flex items-center justify-center">
+                <span className="text-emerald-900 text-2xl font-semibold">
                   {getInitial(member.staffName)}
                 </span>
               </div>

@@ -4,7 +4,11 @@ import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
 import moment from "moment-timezone";
-import { setGroupTime, setGroupDate } from "@/app/redux/slices/groupSlice";
+import {
+  setGroupTime,
+  setGroupDate,
+  updateGuest,
+} from "@/app/redux/slices/groupSlice";
 
 export default function Page() {
   const dispatch = useDispatch();
@@ -82,6 +86,24 @@ export default function Page() {
   const handleTimeSelect = (isoStart) => {
     setSelectedTime(isoStart);
     dispatch(setGroupTime(isoStart));
+
+    // for each guest, compute its own endTime and dispatch an update
+    guests.forEach((guest) => {
+      const endTime = moment
+        .utc(isoStart) // treat start as UTC
+        .add(guest.duration || 0, "minutes")
+        .toISOString(); // full ISO Z format
+
+      dispatch(
+        updateGuest({
+          id: guest.id,
+          data: {
+            start: isoStart,
+            end: endTime,
+          },
+        })
+      );
+    });
   };
 
   return (

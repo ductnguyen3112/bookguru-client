@@ -65,7 +65,11 @@ export default function TimeSelection() {
 
         setTimeSlots(response.data.slots || []);
       } catch (err) {
-        setMessage(err);
+        if (axios.isCancel(err)) {
+          console.log("Request canceled", err.message);
+        } else {
+          setError(err.response?.data?.error || err.message);
+        }
       } finally {
         setLoading(false);
       }
@@ -122,8 +126,8 @@ export default function TimeSelection() {
       <div className="slide-animated">
         {/* Staff Selector */}
         <div className="flex items-center space-x-2 mb-6">
-          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-            <span className="text-sm font-medium text-gray-700">
+          <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center">
+            <span className="text-sm font-medium text-emerald-900">
               {isAnySelected
                 ? "A"
                 : preferenceStaff?.staffName?.charAt(0) || "?"}
@@ -163,7 +167,7 @@ export default function TimeSelection() {
                 <div
                   className={`rounded-2xl w-16 h-16 flex items-center justify-center text-lg font-semibold mb-1 ${
                     isSelected
-                      ? "bg-indigo-600 text-white"
+                      ? "bg-emerald-900 text-white"
                       : "bg-gray-200 text-gray-700"
                   }`}
                 >
@@ -186,7 +190,7 @@ export default function TimeSelection() {
                 onClick={() => handleTimeSelect(slot.start)}
                 className={`w-full text-left border rounded-md py-4 px-4 hover:bg-gray-50 focus:outline-none ${
                   selectedTime === slot.start
-                    ? "border-indigo-600"
+                    ? "border-emerald-900"
                     : "border-gray-200"
                 }`}
               >

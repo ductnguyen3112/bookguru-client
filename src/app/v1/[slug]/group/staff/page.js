@@ -35,7 +35,7 @@ export default function GroupStaffSelection() {
       </nav>
 
       {/* Title */}
-      <h1 className="text-2xl font-bold mb-10">Select professional</h1>
+      <h1 className="text-2xl font-bold mb-10">Select staff options</h1>
 
       {/* Card Grid */}
       <div className="grid grid-cols-3 gap-4 max-w-xl">
@@ -44,7 +44,7 @@ export default function GroupStaffSelection() {
           onClick={() => randomSelection()}
           className={`flex flex-col items-center  max-w-80 justify-center border rounded-xl px-4 py-6 cursor-pointer transition text-center h-40 ${
             selected === "any"
-              ? "border-purple-500"
+              ? "border-emerald-900"
               : "border-gray-300 hover:border-gray-400"
           }`}
         >
@@ -60,7 +60,7 @@ export default function GroupStaffSelection() {
           onClick={() => setSelected("specific")}
           className={`flex flex-col items-center justify-center border max-w-80  rounded-xl px-4 py-6 cursor-pointer transition text-center h-40 ${
             selected === "specific"
-              ? "border-purple-500"
+              ? "border-emerald-900"
               : "border-gray-300 hover:border-gray-400"
           }`}
         >

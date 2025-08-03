@@ -183,7 +183,7 @@ export default function SelectServices() {
                       <input
                         type="checkbox"
                         name="service"
-                        className="mt-2 h-5 w-5 rounded-lg accent-indigo-700"
+                        className="mt-2 h-5 w-5 rounded-lg accent-emerald-900"
                         checked={isChecked}
                         onChange={() => handleSelectService(service)}
                       />

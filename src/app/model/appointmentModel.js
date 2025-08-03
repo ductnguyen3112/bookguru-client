@@ -95,6 +95,12 @@ const appointmentSchema = new Schema({
     default: "approved",
   },
   location: locationSchema,
+  groupId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Group",
+    default: null,
+    index: true,
+  },
   code: {
     type: String,
     unique: true,

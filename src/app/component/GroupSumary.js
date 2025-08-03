@@ -101,20 +101,30 @@ export default function GroupSummary() {
     }
   };
 
+
+
+
   const SubmitAppointment = async () => {
     try {
       const appointment = {
-        url: domain,
-        servicesId: services,
-        userId: clientData._id,
-        staff: staff,
-        total: cost,
-        note: "",
-        start: start.toISOString(),
-        end: end.toISOString(),
-        preference: false,
-        duration,
-        status: "approved",
+        business: business._id,
+        client: clientData._id,
+        date: date,
+        time: time,
+        phone: clientPhone,
+        cost: cost,
+        groupId: null, // Set to null for now, can be updated later
+        guests: guests.map((guest) => ({
+          name: guest.name,
+          services: guest.services.map((service) => service._id),
+          staff: guest.staff || "any",
+          duration: guest.duration,
+          startTime: start.toISOString(),
+          endTime: end.toISOString(),
+          cost: guest.cost,
+          isMainBooker: guest.isMainBooker,
+        })),
+
       };
 
       const response = await axios.post(
