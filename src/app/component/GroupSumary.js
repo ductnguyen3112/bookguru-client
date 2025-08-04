@@ -239,7 +239,7 @@ export default function GroupSummary() {
           </div>
           <button
             onClick={nextStep}
-            className="w-30 lg:w-full bg-black text-white py-3 rounded-full text-sm font-medium hover:bg-black/80 transition"
+            className="w-30 lg:w-full bg-indigo-700 text-white py-3 cursor-pointer rounded-full text-sm font-medium hover:bg-indigo-500 transition"
           >
             {buttonValue}
           </button>

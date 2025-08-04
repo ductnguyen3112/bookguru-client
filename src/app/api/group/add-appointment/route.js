@@ -18,7 +18,7 @@ export async function POST(request) {
     await session.startTransaction();
     
     const body = await request.json();
-    console.log("Received group appointment request:", body);
+
     
     const {
       url,
@@ -33,12 +33,7 @@ export async function POST(request) {
 
     // 1) Validate required fields
     if (!url || !guests?.length || !groupStart || !groupEnd) {
-      console.log("Missing required fields:", {
-        url: !!url,
-        guestsLength: guests?.length,
-        groupStart: !!groupStart,
-        groupEnd: !!groupEnd
-      });
+
       return NextResponse.json(
         { success: false, message: "Missing required fields" },
         { status: 400 }
@@ -59,7 +54,7 @@ export async function POST(request) {
 
     // Ensure start is before end
     if (startMoment.isSameOrAfter(endMoment)) {
-      console.log("Invalid time range - start must be before end:", { groupStart, groupEnd });
+
       return NextResponse.json(
         { success: false, message: "Invalid time range - start time must be before end time" },
         { status: 400 }
@@ -69,11 +64,6 @@ export async function POST(request) {
     // ✅ Properly define normalized times
     const normalizedStart = startMoment.utc().toISOString();
     const normalizedEnd = endMoment.utc().toISOString();
-    
-    console.log("Normalized times:", {
-      original: { groupStart, groupEnd },
-      normalized: { normalizedStart, normalizedEnd }
-    });
 
     // 2) Load business
     const business = await Business.findOne({ businessURL: url }).session(session);
@@ -86,7 +76,7 @@ export async function POST(request) {
     }
 
     const timezone = business.businessTimezone;
-    console.log(`Business found: ${business.businessName}, timezone: ${timezone}`);
+ 
     
 
 
@@ -100,7 +90,6 @@ export async function POST(request) {
       );
     }
 
-    console.log(`All guests share userId: ${mainUserId}`);
 
     const mainClient = await Client.findById(mainUserId).session(session);
     if (!mainClient) {
@@ -112,9 +101,7 @@ export async function POST(request) {
     }
 
     const mainBookerName = mainClient.clientName;
-    console.log(`Main booker: ${mainBookerName} (ID: ${mainUserId})`);
-    console.log(`All guests will be linked to this account`);
-    
+
     const groupId = new mongoose.Types.ObjectId();
     const createdAppointments = [];
     const conflictErrors = [];
@@ -136,10 +123,6 @@ export async function POST(request) {
         continue;
       }
 
-      // ✅ Check for conflicts with the assigned staff
-      console.log(`Checking conflicts for guest ${id} with staff ${staff.staffName} (${staffId})`);
-      console.log(`Time slot: ${normalizedStart} to ${normalizedEnd}`);
-      
       const existingAppointments = await Appointment.find({
         staff: staffId,
         status: { $ne: "canceled" },
@@ -151,8 +134,7 @@ export async function POST(request) {
         ]
       }).session(session);
 
-      console.log(`Found ${existingAppointments.length} existing appointments for staff ${staff.staffName}`);
-      
+  
       if (existingAppointments.length > 0) {
         console.log("Existing appointments:");
         existingAppointments.forEach((appt, index) => {
@@ -165,7 +147,7 @@ export async function POST(request) {
         continue;
       }
 
-      console.log(`✅ No conflicts found for staff ${staff.staffName} assigned to guest ${id}`);
+      
     }
 
     // 4) If there are conflicts, return them
@@ -199,14 +181,6 @@ export async function POST(request) {
         appointmentName = `${mainBookerName} (${guestName})`;
       }
 
-      console.log(`Creating appointment for guest ${id}:`, {
-        appointmentName,
-        providedName: name,
-        staffId,
-        staffName: staff?.staffName,
-        servicesCount: guestServices.length,
-        isMainBooker
-      });
 
       // ✅ Build appointment data
       const appointmentData = {
@@ -235,14 +209,7 @@ export async function POST(request) {
         },
       };
 
-      console.log("Creating appointment with data:", {
-        name: appointmentData.name,
-        start: appointmentData.start,
-        end: appointmentData.end,
-        staff: appointmentData.staff,
-        staffName: staff?.staffName,
-        servicesCount: appointmentData.services.length
-      });
+
 
       // Create appointment
       const appointment = new Appointment(appointmentData);

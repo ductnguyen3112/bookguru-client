@@ -1,321 +1,198 @@
-// src/app/api/group/add-appointment/route.js
-import { connect } from "@/app/dbConfig/dbConfig";
-import { NextResponse } from "next/server";
-import mongoose from "mongoose";
-import Business from "@/app/model/businessModel";
-import Appointment from "@/app/model/appointmentModel";
-import Staff from "@/app/model/staffModel";
-import Client from "@/app/model/clientModel";
-import { pusherServer } from "@/app/helper/helper";
-import moment from "moment-timezone";
+"use client";
+import React, { use, useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
+import { useDispatch } from "react-redux";
 
-connect();
+import { setModal, setModalTitle, addStaff } from "../redux/slices/dataSlice";
+import axios from "axios";
 
-export async function POST(request) {
-  const session = await mongoose.startSession();
-  
-  try {
-    await session.startTransaction();
-    
-    const body = await request.json();
-    console.log("Received group appointment request:", body);
-    
-    const {
-      url,
-      guests,
-      groupStart,
-      groupEnd,
-      groupDuration,
-      note = "",
-      servicesByGuest = {},
-      preferenceByGuest = {},
-    } = body;
+export default function SummaryCard() {
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const {
+    cost,
+    duration,
+    staff,
+    services,
+    note,
+    preference,
+    time,
+    randomStaff,
+  } = useSelector((state) => state.data.selected);
 
-    // 1) Validate required fields
-    if (!url || !guests?.length || !groupStart || !groupEnd) {
-      console.log("Missing required fields:", {
-        url: !!url,
-        guestsLength: guests?.length,
-        groupStart: !!groupStart,
-        groupEnd: !!groupEnd
-      });
-      return NextResponse.json(
-        { success: false, message: "Missing required fields" },
-        { status: 400 }
-      );
-    }
+  const clientData = useSelector((state) => state.data.clientData.client);
 
-    // ✅ Validate and normalize date formats
-    const startMoment = moment(groupStart);
-    const endMoment = moment(groupEnd);
-    
-    if (!startMoment.isValid() || !endMoment.isValid()) {
-      console.log("Invalid date formats:", { groupStart, groupEnd });
-      return NextResponse.json(
-        { success: false, message: "Invalid date formats provided" },
-        { status: 400 }
-      );
-    }
+  const business = useSelector((state) => state.data.business);
+  const domain = business.businessURL;
+  const [buttonValue, setButtonValue] = useState("Continue");
+  const start = new Date(time); // time is already ISO 8601
+  const end = new Date(start.getTime() + duration * 60000); // add duration in ms
 
-    // Ensure start is before end
-    if (startMoment.isSameOrAfter(endMoment)) {
-      console.log("Invalid time range - start must be before end:", { groupStart, groupEnd });
-      return NextResponse.json(
-        { success: false, message: "Invalid time range - start time must be before end time" },
-        { status: 400 }
-      );
-    }
+  useEffect(() => {
+    if (!services.length) {
+      const pathname = window.location.pathname;
 
-    // ✅ Properly define normalized times
-    const normalizedStart = startMoment.utc().toISOString();
-    const normalizedEnd = endMoment.utc().toISOString();
-    
-    console.log("Normalized times:", {
-      original: { groupStart, groupEnd },
-      normalized: { normalizedStart, normalizedEnd }
-    });
-
-    // 2) Load business
-    const business = await Business.findOne({ businessURL: url }).session(session);
-    if (!business) {
-      await session.abortTransaction();
-      return NextResponse.json(
-        { success: false, message: "Business not found" },
-        { status: 404 }
-      );
-    }
-
-    const timezone = business.businessTimezone;
-    console.log(`Business found: ${business.businessName}, timezone: ${timezone}`);
-    
-    // ✅ Find the main booker (guest with isMainBooker: true)
-    const mainBooker = guests.find(guest => guest.isMainBooker === true);
-    if (!mainBooker) {
-      await session.abortTransaction();
-      return NextResponse.json(
-        { success: false, message: "Main booker not found" },
-        { status: 400 }
-      );
-    }
-
-    // ✅ Get main booker's client data (all guests should have same userId)
-    const mainUserId = mainBooker.userId;
-    if (!mainUserId) {
-      await session.abortTransaction();
-      return NextResponse.json(
-        { success: false, message: "Main booker userId not provided" },
-        { status: 400 }
-      );
-    }
-
-    const mainClient = await Client.findById(mainUserId).session(session);
-    if (!mainClient) {
-      await session.abortTransaction();
-      return NextResponse.json(
-        { success: false, message: "Main booker client not found" },
-        { status: 404 }
-      );
-    }
-
-    const mainBookerName = mainClient.clientName;
-    console.log(`Main booker: ${mainBookerName} (ID: ${mainUserId})`);
-    console.log(`All guests will be linked to this account`);
-    
-    const groupId = new mongoose.Types.ObjectId();
-    const createdAppointments = [];
-    const conflictErrors = [];
-
-    // 3) Check staff conflicts for all guests first
-    for (const guest of guests) {
-      const { id, staffId } = guest;
-
-      // ✅ Each guest should already have their own staffId assigned
-      if (!staffId || staffId === "any") {
-        conflictErrors.push(`Guest ${id} does not have a staff member assigned`);
-        continue;
+      if (/\/booking\/[^/]+/.test(pathname)) {
+        window.location.href = pathname.replace(/\/booking\/[^/]+/, "/booking");
       }
-
-      // Validate staff exists
-      const staff = await Staff.findById(staffId).session(session);
-      if (!staff) {
-        conflictErrors.push(`Staff not found for guest ${id}`);
-        continue;
-      }
-
-      // ✅ Check for conflicts with the assigned staff
-      console.log(`Checking conflicts for guest ${id} with staff ${staff.staffName} (${staffId})`);
-      console.log(`Time slot: ${normalizedStart} to ${normalizedEnd}`);
-      
-      const existingAppointments = await Appointment.find({
-        staff: staffId,
-        status: { $ne: "canceled" },
-        $or: [
-          {
-            start: { $lt: normalizedEnd },
-            end: { $gt: normalizedStart }
-          }
-        ]
-      }).session(session);
-
-      console.log(`Found ${existingAppointments.length} existing appointments for staff ${staff.staffName}`);
-      
-      if (existingAppointments.length > 0) {
-        console.log("Existing appointments:");
-        existingAppointments.forEach((appt, index) => {
-          console.log(`  ${index + 1}. ${appt.start} to ${appt.end} (${appt.name})`);
-        });
-        
-        conflictErrors.push(
-          `Staff ${staff.staffName} is not available during ${moment(normalizedStart).tz(timezone).format('MMM DD, h:mm A')} - ${moment(normalizedEnd).tz(timezone).format('h:mm A')} (${existingAppointments.length} existing appointment${existingAppointments.length > 1 ? 's' : ''})`
-        );
-        continue;
-      }
-
-      console.log(`✅ No conflicts found for staff ${staff.staffName} assigned to guest ${id}`);
     }
+  }, []);
 
-    // 4) If there are conflicts, return them
-    if (conflictErrors.length > 0) {
-      await session.abortTransaction();
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: "Scheduling conflicts detected",
-          conflicts: conflictErrors 
-        },
-        { status: 409 }
-      );
+  // Extract all available services from the business catalogue.
+  const availableServices = (business.catalogue || []).reduce(
+    (acc, category) => {
+      return [...acc, ...(category.categoryServices || [])];
+    },
+    []
+  );
+
+  // Filter selected services to only include those that are available in the business data.
+  const filteredServices = services.filter((selectedService) =>
+    availableServices.some(
+      (availableService) =>
+        availableService._id.toString() === selectedService._id.toString()
+    )
+  );
+
+  const servicesCount = filteredServices.length;
+  const durationString =
+    duration < 60
+      ? `${duration}m`
+      : `${Math.floor(duration / 60)}h${
+          duration % 60 ? ` ${duration % 60}m` : ""
+        }`;
+
+  const nextStep = (e) => {
+    e.preventDefault();
+
+    const mainStep = window.location.href.split("/").pop().split("#")[0];
+
+    switch (mainStep) {
+      // e.g. when no step is present, go to booking start (adjust URL as needed)
+
+      case "staff":
+        if (!preference) {
+          dispatch(addStaff(randomStaff));
+        }
+
+        router.push(`/v1/${domain}/booking/time`);
+
+        break;
+      case "time":
+        if (!time || time === "null" || time === "undefined") {
+          toast.error("Please select a time");
+          return;
+        }
+        router.push(`/v1/${domain}/booking/overview`);
+
+        break;
+      case "overview":
+        setButtonValue("Processing...");
+
+        const token = localStorage.getItem("token");
+
+        if (!token || token === "null" || token === "undefined") {
+          dispatch(setModal(true));
+          dispatch(setModalTitle("ClientPhoneSignin"));
+
+          return;
+        } else {
+          SubmitAppointment();
+        }
+        break;
+      // Add more cases as needed for other steps
+      default:
+        router.push(`/v1/${domain}/booking/staff`);
+        break;
     }
+  };
 
-    // ✅ 5) Create appointments for each guest under main booker's name
-    for (const guest of guests) {
-      const { id, name, staffId, total = 0, duration = 0, isMainBooker } = guest;
-      
-      // Get staff info
-      const staff = await Staff.findById(staffId).session(session);
-      const guestServices = servicesByGuest[id] || [];
-      
-      // ✅ Format appointment name: Main booker for first guest, "MainName (Guest X)" for others
-      let appointmentName;
-      if (isMainBooker) {
-        appointmentName = mainBookerName;
-      } else {
-        // Use provided name or fallback to "Guest X" format
-        const guestName = name && name.trim() !== "" ? name : `Guest ${id}`;
-        appointmentName = `${mainBookerName} (${guestName})`;
-      }
-
-      console.log(`Creating appointment for guest ${id}:`, {
-        appointmentName,
-        providedName: name,
-        staffId,
-        staffName: staff?.staffName,
-        servicesCount: guestServices.length,
-        isMainBooker
-      });
-
-      // ✅ Build appointment data
-      const appointmentData = {
-        name: appointmentName, // ✅ All appointments under main booker's name with guest notation
-        businessId: business._id,
-        groupId,
-        services: guestServices,
-        start: normalizedStart,
-        end: normalizedEnd,
-        staff: staffId, // ✅ Each guest has their own assigned staff
-        userId: mainUserId, // ✅ All appointments linked to main booker's account
-        total,
-        duration: groupDuration,
-        note,
-        preference: preferenceByGuest[id] || false,
-        type: "appointment",
+  const SubmitAppointment = async () => {
+    try {
+      const appointment = {
+        url: domain,
+        servicesId: services,
+        userId: clientData._id,
+        staff: staff,
+        total: cost,
+        note: note,
+        start: start.toISOString(), // maintain UTC ISO format
+        end: end.toISOString(), // maintain UTC ISO format
+        preference,
+        duration,
         status: "approved",
-        location: {
-          business: business.businessName,
-          address: business.businessAddress,
-          phone: business.businessPhone,
-          email: business.businessEmail,
-          website: business.businessDomain,
-          logo: business.businessLogo,
-          url: business.businessURL,
-        },
       };
 
-      console.log("Creating appointment with data:", {
-        name: appointmentData.name,
-        start: appointmentData.start,
-        end: appointmentData.end,
-        staff: appointmentData.staff,
-        staffName: staff?.staffName,
-        servicesCount: appointmentData.services.length
-      });
+      const response = await axios.post(
+        "/api/client/appointment/add",
+        appointment
+      );
 
-      // Create appointment
-      const appointment = new Appointment(appointmentData);
-      await appointment.save({ session });
-
-      console.log(`✅ Appointment created with ID: ${appointment._id} for "${appointmentName}" with ${staff?.staffName}`);
-
-      // ✅ Link all appointments to main booker's client record
-      if (!business.customers.includes(mainUserId)) {
-        business.customers.push(mainUserId);
-      }
-      mainClient.appointments.push(appointment._id);
-
-      // Trigger real-time notification
-      try {
-        await pusherServer.trigger(
-          `${business._id}_channel`,
-          "appointment",
-          { message: "add", appointment }
-        );
-      } catch (pusherError) {
-        console.warn("Pusher notification failed:", pusherError.message);
-        // Don't fail the whole transaction for pusher errors
-      }
-
-      createdAppointments.push({
-        ...appointment.toObject(),
-        staffName: staff.staffName,
-        guestId: id,
-        guestName: appointmentName
-      });
+      router.push(`/v1/${domain}/confirm`);
+    } catch (error) {
+      console.error(error);
+      router.push(`/v1/${domain}`);
+      setButtonValue("Continue");
+      toast.error("Something went wrong, please try again");
     }
+  };
+  return (
+    <div className="fixed bottom-0 left-0 right-0 md:sticky md:top-5 block">
+      <div className="border bg-white md:mt-20 border-gray-200 rounded-md p-4 justify-between lg:min-h-80">
+        {/* Header: Business Info */}
+        <div className="hidden md:block">
+          <div className="flex items-center mb-4">
+            <div>
+              <h3 className="text-base font-semibold text-gray-900">
+                {business.businessName}
+              </h3>
+              <p className="text-sm text-gray-500">
+                {business.businessAddress}
+              </p>
+            </div>
+          </div>
 
-    // ✅ Save main client with all appointment references
-    await mainClient.save({ session });
-    await business.save({ session });
+          {/* Selected Services */}
+          <div className="border-y border-gray-200 py-3 mb-4">
+            {filteredServices.map((service, index) => (
+              <div key={index} className="mb-3 last:mb-0">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="font-medium text-gray-900">
+                    {service.serviceName}
+                  </p>
+                  <p className="font-medium text-gray-900">${service.price}</p>
+                </div>
+                <p className="text-sm text-gray-500">{service.duration} mins</p>
+              </div>
+            ))}
+          </div>
 
-    // Commit transaction
-    await session.commitTransaction();
+          {/* Total */}
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-gray-700">Total</p>
+            <p className="text-sm font-semibold text-gray-900">CA ${cost}</p>
+          </div>
+        </div>
 
-    return NextResponse.json({
-      success: true,
-      message: "Group appointments created successfully",
-      groupId,
-      appointments: createdAppointments,
-      summary: {
-        totalAppointments: createdAppointments.length,
-        mainBooker: mainBookerName,
-        groupDuration,
-        startTime: moment(normalizedStart).tz(timezone).format("MMMM DD, YYYY h:mm A"),
-        endTime: moment(normalizedEnd).tz(timezone).format("h:mm A"),
-      }
-    });
-
-  } catch (error) {
-    await session.abortTransaction();
-    console.error("Group appointment creation error:", error);
-    
-    return NextResponse.json(
-      { 
-        success: false, 
-        message: error.message || "Failed to create group appointments",
-        error: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      },
-      { status: 500 }
-    );
-  } finally {
-    await session.endSession();
-  }
+        {/* Continue Button */}
+        <div className="flex justify-between items-center">
+          {/* Mobile view */}
+          <div className="block md:hidden">
+            <p className="text-lg font-semibold">{`$${cost}`}</p>
+            <p className="text-sm text-black">
+              {`Services: ${servicesCount || 0} - ${durationString}`}
+            </p>
+          </div>
+          <button
+            onClick={nextStep}
+            className="w-30 lg:w-full bg-indigo-600 text-white py-3 rounded-full text-sm font-medium hover:bg-indigo-500/80 transition"
+          >
+            {buttonValue}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

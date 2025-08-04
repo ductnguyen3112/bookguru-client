@@ -38,7 +38,7 @@ export default function BusinessHours({ data }) {
                   {/* Bullet: green if open, gray if closed */}
                   <span
                     className={`inline-block w-2 h-2 rounded-full mr-2 ${
-                      hours?.isOpen ? "bg-green-500" : "bg-gray-400"
+                      hours?.isOpen ? "bg-indigo-500" : "bg-gray-400"
                     }`}
                   ></span>
                   <span>{day}</span>

@@ -120,8 +120,8 @@ export default function GroupOverview() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="max-w-2xl w-full bg-white rounded-xl shadow-lg p-8">
+    <div className="min-h-screen  flex items-center justify-center px-4">
+      <div className="max-w-2xl w-full bg-white rounded-xl border lg:my-20 border-gray-200 p-8">
         
         {/* Header */}
         <div className="text-center mb-8">
@@ -253,10 +253,9 @@ export default function GroupOverview() {
         <div className="bg-blue-50 rounded-lg p-4 mb-6">
           <h4 className="font-semibold text-blue-900 mb-2">Important Information</h4>
           <ul className="text-sm text-blue-800 space-y-1">
-            <li>• Please arrive 10-15 minutes before your appointment</li>
-            <li>• All guests should bring valid identification</li>
+            <li>• Please arrive 10-15 minutes before your appointment</li>    
             <li>• Group appointments require 24-hour notice for changes</li>
-            <li>• Payment is due at the time of service unless pre-paid</li>
+ 
           </ul>
         </div>
 

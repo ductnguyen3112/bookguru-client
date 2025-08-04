@@ -44,7 +44,7 @@ export default function Page() {
   // ✅ Create stable references to prevent unnecessary re-fetches
   const guestsStableRef = React.useMemo(() => {
     return guests.map(guest => ({
-      id: guest._id,
+      id: guest.id,
       services: guest.services,
       staff: guest.staff,
       duration: guest.duration,
@@ -56,53 +56,77 @@ export default function Page() {
 
   // Fetch whenever guests structure, selectedDate, or businessURL changes
   // ✅ Removed selectedTime from dependencies to prevent reload on time selection
-  useEffect(() => {
-    if (!guestsStableRef.length || !businessData.businessURL) return;
+ useEffect(() => {
+  if (!guestsStableRef.length || !businessData.businessURL) return;
 
-    const aborter = new AbortController();
-    const fetchSlots = async () => {
-      setLoading(true);
-      setError(null);
+  const aborter = new AbortController();
+  const fetchSlots = async () => {
+    setLoading(true);
+    setError(null);
 
-      try {
-        const payload = {
-          domain: businessData.businessURL,
-          date: selectedDateString,
-          guests: guestsStableRef,
-        };
+    try {
+      const payload = {
+        domain: businessData.businessURL,
+        date: selectedDateString,
+        guests: guestsStableRef,
+      };
 
-        const res = await axios.post("/api/booking/group-time", payload, {
-          signal: aborter.signal,
-        });
+      const res = await axios.post("/api/booking/group-time", payload, {
+        signal: aborter.signal,
+      });
+      
+      console.log("Received time slots:", res.data);
+
+      if (res.data.success) {
+        const starts = (res.data.slots || []).map((s) => s.start);
+        setTimeSlots(starts);
         
-        console.log("Received time slots:", res.data);
-
-        if (res.data.success) {
-          const starts = (res.data.slots || []).map((s) => s.start);
-          setTimeSlots(starts);
-          
-          
-
-
-       
-        } else {
-          setTimeSlots([]);
-          setError(res.data.message || "No slots returned");
-          setMessage(res.data.message || "No slots available for this date");
+        // ✅ NEW: Dispatch staff assignments for each guest
+        if (res.data.guests && Array.isArray(res.data.guests)) {
+          res.data.guests.forEach(guestData => {
+            if (guestData.id && guestData.staff) {
+              dispatch(updateGuest({
+                id: guestData.id,
+                data: {
+                  staff: guestData.staff
+                }
+              }));
+            }
+          });
         }
-      } catch (err) {
-        if (!axios.isCancel(err)) {
-          setError(err.response?.data?.error || err.message);
+        
+        // Alternative: If the API returns staff assignments in a different format
+        // You might need to adapt this based on your actual API response structure
+        /* 
+        if (res.data.staffAssignments) {
+          Object.entries(res.data.staffAssignments).forEach(([guestId, staffId]) => {
+            dispatch(updateGuest({
+              id: parseInt(guestId), // or keep as string depending on your ID format
+              data: {
+                staff: staffId
+              }
+            }));
+          });
         }
-      } finally {
-        setLoading(false);
+        */
+
+      } else {
+        setTimeSlots([]);
+        setError(res.data.message || "No slots returned");
+        setMessage(res.data.message || "No slots available for this date");
       }
-    };
+    } catch (err) {
+      if (!axios.isCancel(err)) {
+        setError(err.response?.data?.error || err.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchSlots();
-    return () => aborter.abort();
-  }, [guestsStableRef, businessData.businessURL, selectedDateString]);
-
+  fetchSlots();
+  return () => aborter.abort();
+}, [guestsStableRef, businessData.businessURL, selectedDateString, dispatch]); // Added dispatch to dependencies
   // build a 30-day horizontal picker
   const dateRange = Array.from({ length: 30 }, (_, i) => {
     const d = moment().add(i, "days");

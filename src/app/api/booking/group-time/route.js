@@ -43,7 +43,7 @@ export async function POST(req) {
 
     // --- NEW: if everyone is “any”, just assign each one in turn to a **distinct** best staff ---
     if (anyStaffGuests.length === guests.length) {
-      console.log("All guests = any → assigning distinct best-staff to each");
+     // console.log("All guests = any → assigning distinct best-staff to each");
 
       // Build a unique pool of all candidates
       let pool = Array.from(

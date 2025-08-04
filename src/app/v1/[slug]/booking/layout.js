@@ -1,7 +1,6 @@
 import React from "react";
-import SumaryCard from "@/app/component/SumaryCard";
 import SimpleHeader from "@/app/component/SimpleHeader";
-
+import SumaryCard from "@/app/component/SumaryCard";
 export default function Layout({ children }) {
   return (
     <section>
