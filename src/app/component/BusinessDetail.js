@@ -9,7 +9,7 @@ export default function BusinessDetail( { data }) {
   const business = data;
   console.log(business);
 
-  const defaultImage = "https://img.freepik.com/free-photo/healthy-beautiful-manicure-manicurist_23-2148766558.jpg"; // Fallback image
+  const defaultImage = "/images/cover.jpg"; // Fallback image
   return (
     <div className="mx-5 lg:mx-10">
       {/* Business Title & Info */}

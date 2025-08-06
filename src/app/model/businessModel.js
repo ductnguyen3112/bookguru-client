@@ -202,6 +202,11 @@ const businessSchema = new Schema({
   businessDescription: {
     type: String,
   },
+  photos: [
+    {
+      type: String,
+    },
+  ],
 
   customers: [
     {
