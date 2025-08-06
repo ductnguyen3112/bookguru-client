@@ -7,15 +7,16 @@ import {
   setModalTitle,
   setLoggedIn,
   setModal,
+
 } from "@/app/redux/slices/dataSlice";
 
 const ClientVerify = ({ phoneSignin }) => {
   const dispatch = useDispatch();
-  const phoneNumber = useSelector((state) => state.client.phone);
+  const phoneNumber = useSelector((state) => state.data.client.phone);
   const [loading, setLoading] = React.useState(false);
   const [otpCode, setOtpCode] = React.useState("");
-  const remainingTime = useSelector((state) => state.client.remainingTime);
-  const resendDisabled = useSelector((state) => state.client.resendDisabled);
+  const remainingTime = useSelector((state) => state.data.client.remainingTime);
+  const resendDisabled = useSelector((state) => state.data.client.resendDisabled);
 
   const VerifyOTP = async () => {
     setLoading(true);
@@ -31,10 +32,13 @@ const ClientVerify = ({ phoneSignin }) => {
 
       const data = await response.json();
 
+      console.log("Verify OTP Response:", data);
+
       if (data.error === "not-found") {
         toast.error("User not found");
         // activate register modal
-        dispatch(setModal("ClientRegister"));
+        dispatch(setModalTitle("ClientRegister"));
+      
       }
 
       if (data.error === "invalid") {

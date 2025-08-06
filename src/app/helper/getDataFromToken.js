@@ -5,7 +5,7 @@ export const getDataFromToken = (request) => {
     const authorizationHeader = request.headers.get("authorization");
 
     if (!authorizationHeader) {
-      throw new Error("token not found");
+      throw new Error("Token not found");
     }
 
     const token = authorizationHeader.replace("Bearer ", "");

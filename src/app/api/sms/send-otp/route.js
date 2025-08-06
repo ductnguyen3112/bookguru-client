@@ -26,15 +26,7 @@ export async function POST(request) {
     if (phone[0] === "1") {
       const existingVerification = await Verify.findOne({ phoneNumber });
 
-      if (existingVerification && existingVerification.attempts >= 3) {
-        return NextResponse.json(
-          {
-            error:
-              "Maximum verification attempts reached. Please try again later in 5 minutes.",
-          },
-          { status: 400 }
-        );
-      }
+
 
       // Generate 6-digit code and 5-minute expiry
       const verifyCode = Math.floor(100000 + Math.random() * 900000);

@@ -126,8 +126,8 @@ export default function TimeSelection() {
       <div className="slide-animated">
         {/* Staff Selector */}
         <div className="flex items-center space-x-2 mb-6">
-          <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center">
-            <span className="text-sm font-medium text-emerald-900">
+          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+            <span className="text-sm font-medium text-gray-900">
               {isAnySelected
                 ? "A"
                 : preferenceStaff?.staffName?.charAt(0) || "?"}
@@ -167,7 +167,7 @@ export default function TimeSelection() {
                 <div
                   className={`rounded-2xl w-16 h-16 flex items-center justify-center text-lg font-semibold mb-1 ${
                     isSelected
-                      ? "bg-emerald-900 text-white"
+                      ? "bg-gray-800 text-white"
                       : "bg-gray-200 text-gray-700"
                   }`}
                 >
@@ -190,7 +190,7 @@ export default function TimeSelection() {
                 onClick={() => handleTimeSelect(slot.start)}
                 className={`w-full text-left border rounded-md py-4 px-4 hover:bg-gray-50 focus:outline-none ${
                   selectedTime === slot.start
-                    ? "border-emerald-900"
+                    ? "border-gray-900"
                     : "border-gray-200"
                 }`}
               >

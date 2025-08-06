@@ -97,7 +97,7 @@ const Index = ({ data }) => {
         {/* Book Now Button */}
         <button
           onClick={handleBookNow}
-          className="w-full bg-indigo-700 text-white py-3 rounded-full text-sm font-medium hover:bg-indigo-800 mb-2"
+          className="w-full bg-gray-800 text-white py-3 rounded-full text-sm font-medium hover:bg-gray-700 mb-2"
         >
           Book now
         </button>

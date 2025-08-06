@@ -30,6 +30,9 @@ const initialState = {
     verifyStatus: "",
     remainingTime: 0,
     resendDisabled: false,
+    confirmOTP: false,
+
+    
   },
   clientData: {
     client: { clientName: "", clientPhone: "", clientEmail: "", _id: "" },
@@ -105,6 +108,12 @@ const dataSlice = createSlice({
     setBookSelection(state, action) {
       state.bookSelection = action.payload;
     },
+    setConfirmOTP(state, action) {
+      state.client.confirmOTP = action.payload;
+    },
+    setRemainingTime(state, action) {
+      state.client.remainingTime = action.payload;
+    },
 
   },
 });
@@ -131,6 +140,8 @@ export const {
   addDate,
   setRandomStaff,
   setBookSelection,
+  setConfirmOTP,
+  setRemainingTime,
 
 } = dataSlice.actions;
 export default dataSlice.reducer;

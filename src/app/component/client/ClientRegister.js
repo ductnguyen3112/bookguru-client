@@ -1,13 +1,13 @@
 import React, { useState } from "react";
-import { useSelector, useDispatch } from "@/redux/store";
-import { setModal } from "@/app/redux/slices/dataSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { setModal, setModalTitle } from "@/app/redux/slices/dataSlice";
 
 import axios from "axios";
 import toast from "react-hot-toast";
 
 const ClientRegister = () => {
   const dispatch = useDispatch();
-  const phoneNumber = useSelector((state) => state.client.phone);
+  const phoneNumber = useSelector((state) => state.data.client.phone);
 
   const [user, setUser] = useState({
     firstName: "",
