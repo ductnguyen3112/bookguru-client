@@ -7,8 +7,9 @@ export default function BusinessDetail( { data }) {
 
 
   const business = data;
+  console.log(business);
 
-
+  const defaultImage = "https://img.freepik.com/free-photo/healthy-beautiful-manicure-manicurist_23-2148766558.jpg"; // Fallback image
   return (
     <div className="mx-5 lg:mx-10">
       {/* Business Title & Info */}
@@ -25,7 +26,7 @@ export default function BusinessDetail( { data }) {
       {/* Main (featured) image with overlay */}
       <div className="relative col-span-1 md:col-span-2">
         <img
-          src="https://onglesjewel.com/wp-content/uploads/2025/03/468939612_18173340244311082_760467991286533471_n.jpg"
+          src={business?.photos && business.photos.length > 0 ? business.photos[0] : defaultImage}
           alt="Featured nails"
           className="w-full max-h-120 rounded-lg object-cover"
         />

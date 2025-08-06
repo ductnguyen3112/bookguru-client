@@ -36,7 +36,10 @@ export async function GET(_req, { params }) {
         staffOptions: businessData.staffOptions,
         bookRange: businessData.bookRange,
         workHours: businessData.workHours,
+        photos: businessData.photos,
       };
+
+      console.log("Business data fetched:", business); // Debug log to check fetched data
   
       return NextResponse.json({ business });
     } catch (error) {
