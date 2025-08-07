@@ -58,6 +58,7 @@ export default function TimeSelection() {
         const response = await axios.post("/api/booking/get-time", payload, {
           signal: controller.signal,
         });
+        console.log("Time slots response:", response.data);
 
         if (!selectedStaff && response.data.staff) {
           dispatch(addStaff(response.data.staff));

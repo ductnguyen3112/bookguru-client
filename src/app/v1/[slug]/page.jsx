@@ -23,7 +23,7 @@ export default async function Page({ params }) {
         "https://bookguru-client.vercel.app/api/booking/" + decodedSlug
         // `http:localhost:3000/api/booking/${decodedSlug}` // Use template literal for better readability
       );
-      console.log("Response data:", res.data);
+
       return res.data.business;
     } catch (error) {
       if (error.response && error.response.status === 400) {

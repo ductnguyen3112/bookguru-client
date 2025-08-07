@@ -136,7 +136,7 @@ export async function POST(request) {
 
   
       if (existingAppointments.length > 0) {
-        console.log("Existing appointments:");
+
         existingAppointments.forEach((appt, index) => {
           console.log(`  ${index + 1}. ${appt.start} to ${appt.end} (${appt.name})`);
         });
@@ -215,8 +215,7 @@ export async function POST(request) {
       const appointment = new Appointment(appointmentData);
       await appointment.save({ session });
 
-      console.log(`✅ Appointment created with ID: ${appointment._id} for "${appointmentName}" with ${staff?.staffName}`);
-
+  
       // ✅ Link all appointments to main booker's client record
       if (!business.customers.includes(mainUserId)) {
         business.customers.push(mainUserId);

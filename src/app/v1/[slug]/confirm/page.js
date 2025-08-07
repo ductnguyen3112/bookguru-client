@@ -1,42 +1,118 @@
 "use client";
 
+import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import moment from "moment-timezone";
+import { CheckCircleIcon } from "@heroicons/react/24/outline";
 
-export default function Page() {
+export default function BookingConfirmPage() {
   const business = useSelector((state) => state.data.business);
-  const phoneLink = `tel:${business.businessPhone}`;
+  const { time, cost } = useSelector((state) => state.data.selected);
+  const [appointmentDetails, setAppointmentDetails] = useState(null);
+
+  // Compute details and auto-redirect
+  useEffect(() => {
+    if (time && business?.businessTimezone) {
+      const start = moment(time).tz(business.businessTimezone);
+      setAppointmentDetails({
+        date: start.format("MMMM DD, YYYY"),
+        time: start.format("h:mm A"),
+      });
+
+      const timer = setTimeout(() => {
+        if (business.businessURL) {
+          window.location.href = `/v1/${business.businessURL}`;
+        }
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [time, business]);
+
+  if (!appointmentDetails || !business) return null;
 
   return (
-    <div>
-      <div className="px-6 py-24 sm:px-6 sm:py-32 lg:px-8 bg-white rounded-xl mx-5 my-20 lg:mx-30">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            Thank You!
-            <br />
-            Your appointment has been confirmed.
-          </h2>
-          <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-600">
-            You will receive a confirmation email shortly. You will be redirect
-            to the home page in 5 seconds.
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="max-w-2xl w-full bg-white rounded-xl shadow-lg p-8">
+        {/* Success Icon */}
+        <div className="text-center mb-8">
+          <div className="mx-auto flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+            <CheckCircleIcon className="w-8 h-8 text-green-600" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Appointment Confirmed!
+          </h1>
+          <p className="text-gray-600">
+            Your appointment has been successfully booked.
           </p>
+        </div>
 
-          <div className="mt-10  items-center justify-center">
-            <p className="font-bold">{business.businessName}</p>
-            <p>{business.businessAddress}</p>
-            <a className="text-primary" href={phoneLink}>
+        {/* Business Info */}
+        <div className="border-b border-gray-200 pb-6 mb-6 flex items-center space-x-4">
+          {business.businessLogo && (
+            <img
+              src={business.businessLogo}
+              alt={business.businessName}
+              className="w-12 h-12 rounded-lg object-cover"
+            />
+          )}
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {business.businessName}
+            </h2>
+            <p className="text-gray-600">{business.businessAddress}</p>
+            <a
+              href={`tel:${business.businessPhone}`}
+              className="text-blue-600 hover:underline"
+            >
               {business.businessPhone}
             </a>
           </div>
+        </div>
 
-          <div className="mt-5 flex items-center justify-center gap-x-6">
-            <a
-              href={business.businessDomain}
-              className="rounded-md bg-black px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-            >
-              {business.businessURL}
-            </a>
+        {/* Appointment Details */}
+        <div className="space-y-4 mb-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Date</p>
+              <p className="text-lg text-gray-900">{appointmentDetails.date}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500">Time</p>
+              <p className="text-lg text-gray-900">{appointmentDetails.time}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Total Cost</p>
+              <p className="text-lg text-gray-900">${cost}</p>
+            </div>
           </div>
         </div>
+
+        {/* Next Steps */}
+        <div className="bg-blue-50 rounded-lg p-4 mb-6">
+          <h4 className="font-semibold text-blue-900 mb-2">What's Next?</h4>
+          <ul className="text-sm text-blue-800 space-y-1">
+            <li>• You’ll receive a confirmation email shortly</li>
+            <li>• Please arrive 5-10 minutes before your appointment</li>
+            <li>• Contact us if you need to reschedule or cancel</li>
+          </ul>
+        </div>
+
+        {/* Action Button */}
+        <div className="flex justify-center">
+          <button
+            onClick={() => window.location.href = `/v1/${business.businessURL}`}
+            className="bg-black text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition"
+          >
+            Back to {business.businessName}
+          </button>
+        </div>
+
+        {/* Auto-redirect notice */}
+        <p className="text-center text-sm text-gray-500 mt-4">
+          You will be redirected to the home page in 5 seconds.
+        </p>
       </div>
     </div>
   );

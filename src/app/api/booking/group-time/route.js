@@ -12,8 +12,7 @@ connect();
 export async function POST(req) {
   try {
     const { domain, guests, date } = await req.json();
-    console.log("Received data:", { domain, guests, date });
-
+    
     // 1) Business & timezone
     const business = await Business.findOne({ businessURL: domain });
     if (!business) {

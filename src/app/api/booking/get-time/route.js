@@ -11,7 +11,6 @@ export async function POST(request) {
   try {
     const reqBody = await request.json();
     const { domain, staff, staffs, date, duration } = reqBody;
-    console.log("Received data:", { domain, staff, staffs, date, duration });
 
     const business = await Business.findOne({ reviewURL: domain });
     if (!business) {
