@@ -22,7 +22,9 @@ export default function SummaryCard() {
     randomStaff,
   } = useSelector((state) => state.data.selected);
 
-  const clientData = useSelector((state) => state.data.clientData.client);
+    const clientData = useSelector((state) => state.auth.user);
+    const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+   
 
   const business = useSelector((state) => state.data.business);
   const domain = business.businessURL;
@@ -91,15 +93,16 @@ export default function SummaryCard() {
       case "overview":
         setButtonValue("Processing...");
 
-        const token = localStorage.getItem("token");
+        
 
-        if (!token || token === "null" || token === "undefined") {
+        if (!isAuthenticated || !clientData) {
           dispatch(setModal(true));
           dispatch(setModalTitle("ClientPhoneSignin"));
 
           return;
         } else {
           SubmitAppointment();
+          console.log("Submitting appointment...");
         }
         break;
       // Add more cases as needed for other steps
@@ -124,6 +127,9 @@ export default function SummaryCard() {
         duration,
         status: "approved",
       };
+      console.log("Submitting appointment:", appointment);
+
+
 
       const response = await axios.post(
         "/api/client/appointment/add",

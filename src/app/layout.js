@@ -2,9 +2,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Footer from "./component/Footer";
 import { ReduxProvider } from "./redux/provider";
+
 import ClientModal from "./component/client/ClientModal";
-import GetUserData from "./component/GetUserData";
-import {Toaster} from "react-hot-toast";
+
+import { Toaster } from "react-hot-toast";
 
 
 const geistSans = Geist({
@@ -17,18 +18,19 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// ... other imports
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ReduxProvider>
-          <main className="flex-grow">{children}</main>
-          <ClientModal/>
-          <GetUserData />
-          <Toaster />
-        </ReduxProvider>
+      <body>
+
+          <ReduxProvider>
+            <main className="flex-grow">{children}</main>
+            <Toaster />
+            <ClientModal/>
+          </ReduxProvider>
+   
         <Footer />
       </body>
     </html>

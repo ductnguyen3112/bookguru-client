@@ -23,9 +23,21 @@ export default function AppointmentOverview() {
   // Find staff object by ID
   const staffMember = business?.staffs?.find((s) => s._id === staff) || {};
 
-  // Flatten all services
+  // ✅ Fix: Flatten all services and properly compare IDs
   const allServices = business?.catalogue?.flatMap((cat) => cat.categoryServices) || [];
-  const selectedServices = allServices.filter((service) => services.includes(service._id));
+  
+  // ✅ Fix: Handle both object and string comparisons for service IDs
+  const selectedServices = allServices.filter((service) => 
+    services.some((selectedService) => {
+      // Handle case where services array contains objects with _id
+      if (typeof selectedService === 'object' && selectedService._id) {
+        return service._id?.toString() === selectedService._id?.toString();
+      }
+      // Handle case where services array contains just ID strings
+      return service._id?.toString() === selectedService?.toString();
+    })
+  );
+
 
   // Compute appointment date & time
   useEffect(() => {
@@ -41,8 +53,8 @@ export default function AppointmentOverview() {
   if (!appointmentDetails || !business) return null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 lg:mt-6 ">
-      <div className="max-w-2xl w-full bg-white rounded-xl border  border-gray-200 p-8">
+    <div className="min-h-screen flex items-center justify-center px-4 mt-0 md:mt-16 ">
+      <div className="max-w-2xl w-full bg-white rounded-xl border border-gray-200 p-8">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="mx-auto flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
@@ -85,7 +97,7 @@ export default function AppointmentOverview() {
           </div>
           <div className="bg-green-50 p-4 rounded-lg text-center">
             <ClockIcon className="w-6 h-6 text-green-600 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-green-600">{appointmentDetails.time}</div>
+            <div className="text-lg md:text-2xl font-bold text-green-600">{appointmentDetails.time}</div>
             <div className="text-sm text-green-800">Time</div>
           </div>
           <div className="bg-purple-50 p-4 rounded-lg text-center">
@@ -98,14 +110,29 @@ export default function AppointmentOverview() {
         {/* Services List */}
         <div className="border-t border-gray-200 pt-6 mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Services</h3>
-          <ul className="space-y-3">
-            {selectedServices.map((svc, idx) => (
-              <li key={svc._id} className="flex justify-between p-3 bg-gray-50 rounded-lg">
-                <span>{idx + 1}. {svc.serviceName}</span>
-                <span>${svc.price}{svc.flex ? '+' : ''}</span>
-              </li>
-            ))}
-          </ul>
+          {selectedServices.length > 0 ? (
+            <ul className="space-y-3">
+              {selectedServices.map((svc, idx) => (
+                <li key={svc._id} className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <span className="font-medium">{idx + 1}. {svc.serviceName}</span>
+                    {svc.description && (
+                      <p className="text-sm text-gray-500 mt-1">{svc.description}</p>
+                    )}
+                    <p className="text-sm text-gray-500">{svc.duration} minutes</p>
+                  </div>
+                  <span className="font-semibold">${svc.price}{svc.flex ? '+' : ''}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No services selected</p>
+              <p className="text-sm text-gray-400 mt-2">
+                Please go back and select services for your appointment.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Notes & Policy */}
@@ -113,7 +140,7 @@ export default function AppointmentOverview() {
           <label className="block text-gray-900 font-semibold mb-2">Booking Notes</label>
           <textarea
             rows={4}
-            className="shadow border rounded-lg w-full py-2 px-3 text-gray-700"
+            className="shadow border rounded-lg w-full py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             value={note}
             onChange={(e) => dispatch(addNote(e.target.value))}
             placeholder="Include comments or requests about your booking"

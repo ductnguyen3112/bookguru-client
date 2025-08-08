@@ -1,124 +1,91 @@
-import React from "react";
+"use client";
 
+import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-
 import toast from "react-hot-toast";
 import {
   setModalTitle,
   setLoggedIn,
   setModal,
-
 } from "@/app/redux/slices/dataSlice";
+import { loginWithOTP } from "@/app/redux/slices/authSlice";
 
-const ClientVerify = ({ phoneSignin }) => {
+const ClientVerify = () => {
   const dispatch = useDispatch();
   const phoneNumber = useSelector((state) => state.data.client.phone);
-  const [loading, setLoading] = React.useState(false);
-  const [otpCode, setOtpCode] = React.useState("");
   const remainingTime = useSelector((state) => state.data.client.remainingTime);
   const resendDisabled = useSelector((state) => state.data.client.resendDisabled);
+  const [otpCode, setOtpCode] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const VerifyOTP = async () => {
+  const handleVerify = async () => {
+    if (!otpCode) {
+      toast.error("Please enter the OTP code");
+      return;
+    }
+
     setLoading(true);
-
     try {
-      const response = await fetch("/api/sms/verify-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ phoneNumber, otpCode }),
-      });
+      // dispatch the Redux thunk and unwrap its result
+      await dispatch(loginWithOTP({ phoneNumber, otpCode })).unwrap();
 
-      const data = await response.json();
-
-      console.log("Verify OTP Response:", data);
-
-      if (data.error === "not-found") {
-        toast.error("User not found");
-        // activate register modal
-        dispatch(setModalTitle("ClientRegister"));
-      
-      }
-
-      if (data.error === "invalid") {
-        toast.error("Invalid verification code");
-        setLoading(false);
-        return;
-      }
-
-      if (data.status === "reset-password") {
-        // Handle case where client has not set a password
+      // success: OTP approved and user fetched
+      dispatch(setLoggedIn(true));
+      dispatch(setModal(false));
+      toast.success("Login successful");
+    } catch (err) {
+      // handle the special RESET_PASSWORD signal
+      if (err === "RESET_PASSWORD") {
         dispatch(setModalTitle("ClientReset"));
-        localStorage.setItem("token", data.token);
-        toast.success("Please set a password");
-        setLoading(false);
-        return;
-      }
-
-      if (data.status === "approved" && data.token) {
-        // Save token to local storage
-        localStorage.setItem("token", data.token);
-        dispatch(setLoggedIn(true));
-
-        // Perform other actions after successful login
-        toast.success("Login successful");
-        dispatch(setModal(false));
+        toast.success("Please set your new password");
       } else {
-        // Handle case where token is not returned or verification fails
-        console.error("Error:", data.error || "Verification failed");
+        toast.error(err || "Verification failed");
       }
-
-      setLoading(false);
-    } catch (error) {
-      console.error("Error:", error);
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div>
-      <div className="text-center">
-        <h3 className="text-lg leading-6 font-medium text-gray-900">
-          Verify your phone number
-        </h3>
-        <div className="mt-2 px-7 py-3">
-          <p className="text-sm text-gray-500">
-            Enter the code sent to your phone number
-          </p>
-          <div className="mt-2">
-            <input
-              type="text"
-              placeholder="Enter OTP"
-              onChange={(e) => setOtpCode(e.target.value)}
-              className="w-full py-4 px-6 border text-center border-[#9ca3af] rounded-md shadow-sm"
-            />
+    <div className="text-center">
+      <h3 className="text-lg font-medium text-gray-900">
+        Verify Your Phone
+      </h3>
+      <p className="mt-2 text-sm text-gray-500">
+        Enter the 6-digit code sent to {phoneNumber}.
+      </p>
 
-            <button
-              onClick={VerifyOTP}
-              disabled={loading}
-              className="mt-5 py-4 px-5 w-full flex justify-center border border-transparent rounded-md shadow-sm text-md font-medium text-white bg-black hover:bg-opacity-90"
-            >
-              {loading ? "Sending..." : "Continue"}
-            </button>
-            <div className="flex flex-row mt-2 items-center justify-center text-sm font-medium space-x-1 text-gray-500">
-              {remainingTime > 0 ? (
-                <p>Resend in {remainingTime} seconds</p>
-              ) : (
-                <a
-                  className={`flex items-center cursor-pointer text-black ${
-                    resendDisabled ? "pointer-events-none opacity-50" : ""
-                  }`}
-                  onClick={phoneSignin}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Resend OTP
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
+      <input
+        type="text"
+        value={otpCode}
+        onChange={(e) => setOtpCode(e.target.value)}
+        placeholder="OTP code"
+        className="mt-4 w-full px-4 py-3 border rounded-md text-center"
+        disabled={loading}
+      />
+
+      <button
+        onClick={handleVerify}
+        disabled={loading}
+        className="mt-6 w-full bg-black text-white py-3 rounded-md hover:opacity-90"
+      >
+        {loading ? "Verifying…" : "Continue"}
+      </button>
+
+      <div className="mt-4 text-sm text-gray-600">
+        {remainingTime > 0 ? (
+          <>Resend in {remainingTime}s</>
+        ) : (
+          <button
+            onClick={() => dispatch(setModalTitle("ClientPhoneSignin"))}
+            disabled={resendDisabled}
+            className={`underline ${
+              resendDisabled ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            Resend OTP
+          </button>
+        )}
       </div>
     </div>
   );

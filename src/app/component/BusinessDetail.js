@@ -7,7 +7,6 @@ export default function BusinessDetail( { data }) {
 
 
   const business = data;
-  console.log(business);
 
   const defaultImage = "/images/cover.jpg"; // Fallback image
   return (

@@ -99,7 +99,7 @@ const dataSlice = createSlice({
     setLoggedIn(state, action) {
       state.isLoggedIn = action.payload;
     },
-    setClientData(state, action) {
+    setClientGroupData(state, action) {
       state.clientData = action.payload;
     },
     setRandomStaff(state, action) {
@@ -134,7 +134,7 @@ export const {
   setLoading,
   setResendDisabled,
   setLoggedIn,
-  setClientData,
+  setGroupClientData,
   addStaffs,
   setPreference,
   addDate,

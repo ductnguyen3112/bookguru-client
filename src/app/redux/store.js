@@ -1,14 +1,19 @@
-// store.js
-import { configureStore } from "@reduxjs/toolkit";
-import dataReducer from "./slices/dataSlice";
-import groupReducer from "./slices/groupSlice"; // assuming you have a guestSlice
- // assuming you have a clientSlice
+// src/app/redux/store.js
+import { configureStore } from '@reduxjs/toolkit'
+import authReducer from './slices/authSlice'
+import groupReducer from './slices/groupSlice'
+import dataReducer from './slices/dataSlice'
+// …other imports
+
 const store = configureStore({
   reducer: {
+    auth: authReducer,
+    group: groupReducer,
     data: dataReducer,
-    group: groupReducer, // assuming you have a guestReducer
-     
-  },
-});
 
-export default store;
+    // …other slices
+  },
+  middleware: getDefaultMiddleware => getDefaultMiddleware({ serializableCheck: false }),
+})
+
+export default store
