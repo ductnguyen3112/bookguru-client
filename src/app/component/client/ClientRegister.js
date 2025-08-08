@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setModal, setModalTitle } from "@/app/redux/slices/dataSlice";
+import { verifyToken } from "@/app/redux/slices/authSlice";
 
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -43,7 +44,7 @@ const ClientRegister = () => {
         toast.success("SignUp Successful");
         dispatch(setModal(false));
 
-        localStorage.setItem("token", data.token);
+        dispatch(verifyToken()); // Dispatch Redux action to verify token
       }
     } catch (error) {
       toast.error("An error occurred! Please refresh and try again.");

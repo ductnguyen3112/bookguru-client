@@ -13,17 +13,18 @@ export default function GroupSummary() {
   const router = useRouter();
 
   const guests = useSelector((state) => state.group.guests);
-  const date = useSelector((state) => state.group.date);
+
   const time = useSelector((state) => state.group.time);
-  const clientPhone = useSelector((state) => state.group.clientPhone);
+
   const business = useSelector((state) => state.data.business);
-  const clientData = useSelector((state) => state.data.clientData.client);
+  const clientData = useSelector((state) => state.auth?.user);
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
 
   const domain = business.businessURL;
   const [buttonValue, setButtonValue] = useState("Continue");
 
   // ✅ Memoize computed values to prevent unnecessary re-calculations
-  const { mainBooker, services, cost, duration, staff } = useMemo(() => {
+  const { services, cost, duration } = useMemo(() => {
     const mainBooker = guests.find((g) => g.isMainBooker);
     return {
       mainBooker,
@@ -33,8 +34,6 @@ export default function GroupSummary() {
       staff: mainBooker?.staff || "any",
     };
   }, [guests]);
-
-
 
   // ✅ Memoize filtered services to prevent re-computation
   const { filteredServices, servicesCount, durationString } = useMemo(() => {
@@ -60,14 +59,6 @@ export default function GroupSummary() {
     return { filteredServices, servicesCount, durationString };
   }, [services, business.catalogue, duration]);
 
-  // ✅ Stable start and end times
-  const { start, end } = useMemo(() => {
-    if (!time || !duration) return { start: null, end: null };
-    const start = new Date(time);
-    const end = new Date(start.getTime() + duration * 60000);
-    return { start, end };
-  }, [time, duration]);
-
   useEffect(() => {
     if (!services.length) {
       const pathname = window.location.pathname;
@@ -82,7 +73,7 @@ export default function GroupSummary() {
     if (!time || !guests.length) return null;
 
     // Calculate group duration (longest service duration)
-    const groupDuration = Math.max(...guests.map(g => g.duration || 0));
+    const groupDuration = Math.max(...guests.map((g) => g.duration || 0));
     const groupStart = new Date(time);
     const groupEnd = new Date(groupStart.getTime() + groupDuration * 60000);
 
@@ -90,16 +81,16 @@ export default function GroupSummary() {
     const servicesByGuest = {};
     const preferenceByGuest = {};
 
-    guests.forEach(guest => {
+    guests.forEach((guest) => {
       servicesByGuest[guest.id] = guest.services || [];
       preferenceByGuest[guest.id] = guest.staff !== "any";
     });
 
     return {
       url: domain,
-      guests: guests.map(guest => ({
+      guests: guests.map((guest) => ({
         id: guest.id,
-        userId: guest.isMainBooker ? clientData._id : null,
+        userId: guest.isMainBooker ? clientData?._id : null,
         staffId: guest.staff === "any" ? null : guest.staff,
         total: guest.cost || 0,
         duration: guest.duration || 0,
@@ -111,7 +102,7 @@ export default function GroupSummary() {
       servicesByGuest,
       preferenceByGuest,
     };
-  }, [time, guests, domain, clientData._id]);
+  }, [time, guests, domain, clientData]);
 
   const SubmitAppointment = useCallback(async () => {
     if (!groupAppointmentPayload) {
@@ -129,71 +120,69 @@ export default function GroupSummary() {
         toast.success("Group appointment created successfully!");
         router.push(`/v1/${domain}/group/confirm`);
       } else {
-        throw new Error(response.data.message || "Failed to create appointment");
+        throw new Error(
+          response.data.message || "Failed to create appointment"
+        );
       }
     } catch (error) {
       console.error("Group appointment error:", error);
       setButtonValue("Continue");
-      toast.error(error.response?.data?.message || "Something went wrong, please try again");
+      toast.error(
+        error.response?.data?.message ||
+          "Something went wrong, please try again"
+      );
     }
   }, [groupAppointmentPayload, router, domain]);
 
-  const nextStep = useCallback((e) => {
-    e.preventDefault();
+  // Updated `nextStep` to check if only one guest is present and display an error
+  const nextStep = useCallback(
+    (e) => {
+      e.preventDefault();
 
-    const currentPath = window.location.pathname;
-    const pathSegments = currentPath.split('/');
-    const mainStep = pathSegments[pathSegments.length - 1];
+      const currentPath = window.location.pathname;
+      const pathSegments = currentPath.split("/");
+      const mainStep = pathSegments[pathSegments.length - 1];
 
-    switch (mainStep) {
-      case "guests":
-        router.push(`/v1/${domain}/group/staff`);
-        break;
-        
-      case "staff":
-        // Validate that we have at least 2 guests with services
-        const validGuests = guests.filter(g => g.services?.length > 0);
-        if (validGuests.length < 2) {
-          toast.error("Please add at least 2 guests with services.");
-          return;
-        }
-        router.push(`/v1/${domain}/group/time`);
-        break;
-        
-      case "time":
-        if (!time) {
-          toast.error("Please select a time for the group appointment.");
-          return;
-        }
-        router.push(`/v1/${domain}/group/overview`);
-        break;
-        
-      case "overview":
-        setButtonValue("Processing...");
-        const token = localStorage.getItem("token");
-        
-        if (!token || token === "null" || token === "undefined") {
-          setButtonValue("Continue");
-          dispatch(setModal(true));
-          dispatch(setModalTitle("ClientPhoneSignin"));
-          return;
-        }
-        
-        SubmitAppointment();
-        break;
-        
-      default:
-        // Default case - go to services selection
-        const token2 = localStorage.getItem("token");
-        if (!token2 || token2 === "null" || token2 === "undefined") {
-          dispatch(setModal(true));
-          dispatch(setModalTitle("ClientPhoneSignin"));
-          return;
-        }
-        router.push(`/v1/${domain}/group/guests`);
-        break;
-    }
-  }, [router, domain, guests, time, dispatch, SubmitAppointment]);
+      if (filteredServices.length === 0) {
+        toast.error("Please select at least one service before continuing.");
+        return;
+      }
+
+      switch (mainStep) {
+        case "guests":
+          const validGuests = guests.filter((g) => g.services?.length > 0);
+          if (validGuests.length < 2) {
+            toast.error("Please add at least 2 guests with services.");
+            return;
+          }
+          router.push(`/v1/${domain}/group/staff`);
+          break;
+
+        case "staff":
+          // Validate that we have at least 2 guests with services
+
+          router.push(`/v1/${domain}/group/time`);
+          break;
+
+        case "time":
+          if (!time) {
+            toast.error("Please select a time for the group appointment.");
+            return;
+          }
+          router.push(`/v1/${domain}/group/overview`);
+          break;
+
+        case "overview":
+          SubmitAppointment();
+          break;
+
+        default:
+          router.push(`/v1/${domain}/group/guests`);
+          break;
+      }
+    },
+    [router, domain, guests, time, filteredServices, SubmitAppointment]
+  );
 
   return (
     <div className="fixed bottom-0 left-0 right-0 md:sticky md:top-5 block">
@@ -211,17 +200,25 @@ export default function GroupSummary() {
           </div>
 
           <div className="border-y border-gray-200 py-3 mb-4">
-            {filteredServices.map((service, index) => (
-              <div key={`${service._id}-${index}`} className="mb-3 last:mb-0">
-                <div className="flex items-center justify-between mb-1">
-                  <p className="font-medium text-gray-900">
-                    {service.serviceName}
+            {filteredServices.length > 0 ? (
+              filteredServices.map((service, index) => (
+                <div key={`${service._id}-${index}`} className="mb-3 last:mb-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="font-medium text-gray-900">
+                      {service.serviceName}
+                    </p>
+                    <p className="font-medium text-gray-900">
+                      ${service.price}
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    {service.duration} mins
                   </p>
-                  <p className="font-medium text-gray-900">${service.price}</p>
                 </div>
-                <p className="text-sm text-gray-500">{service.duration} mins</p>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-gray-500">No service selected</p>
+            )}
           </div>
 
           <div className="flex items-center justify-between mb-4">

@@ -160,7 +160,7 @@ export default function SelectServices() {
               return (
                 <label
                   key={service._id}
-                  className={`block border p-4 rounded-md cursor-pointer hover:bg-gray-50 slide-animated transition ${
+                  className={`block border p-4 rounded-lg cursor-pointer hover:bg-gray-50 slide-animated transition ${
                     isChecked ? "border-black" : "border-gray-200"
                   }`}
                 >
@@ -183,7 +183,8 @@ export default function SelectServices() {
                       <input
                         type="checkbox"
                         name="service"
-                        className="mt-2 h-5 w-5 rounded-lg border-gray-300 accent-indigo-600 focus:ring-indigo-500"
+                      
+                        className="mt-2 h-5 w-5 rounded-full border-gray-300 accent-indigo-600 focus:ring-indigo-500"
                         checked={isChecked}
                         onChange={() => handleSelectService(service)}
                       />

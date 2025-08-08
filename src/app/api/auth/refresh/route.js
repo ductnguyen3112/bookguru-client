@@ -12,7 +12,7 @@ export async function POST(request) {
     }
 
     // Verify refresh token
-    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    const decoded = jwt.verify(refreshToken, process.env.TOKEN_SECRET);
     
     // Get user
     const client = await Client.findById(decoded.id);

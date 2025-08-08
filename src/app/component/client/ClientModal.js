@@ -19,12 +19,22 @@ import {
   setRemainingTime,
   setLoading,
 } from "@/app/redux/slices/dataSlice";
+import {useEffect} from "react"
+import { initializeAuth } from "@/app/redux/slices/authSlice";
 
 export default function Modal() {
   const dispatch = useDispatch();
   const modalTitle = useSelector((state) => state.data.modalTitle);
   const phoneNumber = useSelector((state) => state.data.client.phone);
   const open = useSelector((state) => state.data.modal);
+
+// automatic check token
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    dispatch(initializeAuth(token));
+  }
+}, [dispatch]); 
 
   const closeModal = () => {
     dispatch(setModal(false));

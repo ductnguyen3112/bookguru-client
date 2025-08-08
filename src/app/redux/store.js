@@ -3,6 +3,7 @@ import { configureStore } from '@reduxjs/toolkit'
 import authReducer from './slices/authSlice'
 import groupReducer from './slices/groupSlice'
 import dataReducer from './slices/dataSlice'
+
 // …other imports
 
 const store = configureStore({
@@ -11,9 +12,9 @@ const store = configureStore({
     group: groupReducer,
     data: dataReducer,
 
-    // …other slices
   },
-  middleware: getDefaultMiddleware => getDefaultMiddleware({ serializableCheck: false }),
-})
+
+});
+
 
 export default store

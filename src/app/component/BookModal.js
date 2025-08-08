@@ -72,7 +72,7 @@ const Index = ({ data }) => {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 md:sticky md:top-5 block">
-      <div className="md:mx-10 border border-gray-300 rounded-lg shadow-sm bg-white p-4">
+      <div className="md:mx-10 border border-gray-200  rounded-lg shadow-xs bg-white p-4">
         {/* Business Name */}
         <h2 className="text-2xl font-semibold text-gray-800 mb-1 hidden md:block">
           {businessName}

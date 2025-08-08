@@ -27,6 +27,7 @@ export default function GroupOverview() {
   const business = useSelector((state) => state.data.business);
   const clientData = useSelector((state) => state.data.clientData.client);
   const isLoggedIn = useSelector((state) => state.data.isLoggedIn);
+  const token = useSelector((state) => state.auth.token); // Use Redux state for token
 
   const [buttonValue, setButtonValue] = useState("Confirm Booking");
   const [appointmentDetails, setAppointmentDetails] = useState(null);
@@ -51,9 +52,7 @@ export default function GroupOverview() {
   }, [groupTime, timezone, groupDuration, business]);
 
   const handleConfirmBooking = async () => {
-    const token = localStorage.getItem("token");
-
-    if (!token || token === "null" || token === "undefined") {
+    if (!token) {
       dispatch(setModal(true));
       dispatch(setModalTitle("ClientPhoneSignin"));
       return;

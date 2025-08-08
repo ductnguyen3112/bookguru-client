@@ -10,9 +10,9 @@ const ClientCancel = () => {
   const appointment = useSelector(
     (state) => state.bookingServices.updateAppointment
   );
+  const token = useSelector((state) => state.auth.token); // Use Redux state for token
 
   const cancelAppointment = async (nType) => {
-    const token = localStorage.getItem("token");
     try {
       const response = await axios.put(
         "/api/client/appointment/update",
@@ -40,7 +40,6 @@ const ClientCancel = () => {
           window.location.href = `https://bookguru.io/v1/${appointment.location.url}`;
         }, 3000);
       }
-
     } catch (error) {
       toast.error("Failed to cancel the appointment");
     }

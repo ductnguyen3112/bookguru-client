@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { Dialog, DialogPanel } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useDispatch, useSelector } from "react-redux";
 import { setModal, setModalTitle } from "@/app/redux/slices/dataSlice";
-import { logout, initializeAuth } from "@/app/redux/slices/authSlice";
+import { logout , initializeAuth } from "@/app/redux/slices/authSlice";
+
+
 
 export default function Header() {
   const dispatch = useDispatch();
@@ -14,10 +16,6 @@ export default function Header() {
   // pull auth state
   const { isAuthenticated, user } = useSelector((state) => state.auth);
 
-  // on mount, check for stored token & validate
-  useEffect(() => {
-    dispatch(initializeAuth());
-  }, [dispatch]);
 
   const triggerLogged = () => {
     if (isAuthenticated) {
