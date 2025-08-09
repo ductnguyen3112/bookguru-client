@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import toast from "react-hot-toast";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   setModalTitle,
   setModal,
@@ -14,7 +14,9 @@ import { login } from "@/app/redux/slices/authSlice";
 
 const ClientLogin = () => {
   const dispatch = useDispatch();
+
   const router = useRouter();
+
   const phoneNumber = useSelector((state) => state.data.client.phone);
   const loading = useSelector((state) => state.auth.loading);
   const [password, setPassword] = useState("");
@@ -71,7 +73,7 @@ const ClientLogin = () => {
   };
 
   return (
-    <div className="mt-3 text-center w-80">
+    <div className="mt-3 text-center w-80 bg-white border border-gray-200 rounded-lg shadow-md">
       <div className="mt-2 px-2 py-3">
         <h3 className="text-lg leading-6 font-medium text-dark">
           Please Login

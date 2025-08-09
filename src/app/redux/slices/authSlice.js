@@ -53,9 +53,9 @@ export const verifyToken = createAsyncThunk(
       axios.defaults.headers.common.Authorization = `Bearer ${token}`;
 
       const { data } = await axios.get('/api/client/signin');
-      console.log('Verifying token:', token);
+          
       if (data?.status === 200 && data?.data?.client) {
-        return data.data.client;
+        return data.data;
       }
       return rejectWithValue('INVALID_TOKEN');
     } catch (err) {
@@ -84,8 +84,9 @@ export const fetchUserData = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get('/api/client/signin');
+       
       if (response.data.status === 200) {
-        return response.data.data.client;
+        return response.data.data;
       }
       return rejectWithValue('Failed to fetch user data');
     } catch (err) {
@@ -99,6 +100,7 @@ export const login = createAsyncThunk(
   async ({ phoneNumber, password }, { dispatch, rejectWithValue }) => {
     try {
       const { data } = await axios.post('/api/client/login', { phoneNumber, password });
+
       if (data?.status === 200 && data?.token) {
         setToken(data.token);
         axios.defaults.headers.common.Authorization = `Bearer ${data.token}`;
@@ -168,6 +170,7 @@ export const resetPassword = createAsyncThunk(
 
 const initialState = {
   user: null,
+  appointments: [],
   loading: false,
   isAuthenticated: false,
   error: null,
@@ -210,7 +213,8 @@ const authSlice = createSlice({
       })
       .addCase(verifyToken.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
+        state.user = action.payload.client;
+        state.appointments = action.payload.appointments;
         state.isAuthenticated = true;
       })
       .addCase(verifyToken.rejected, (state) => {
@@ -226,7 +230,8 @@ const authSlice = createSlice({
       })
       .addCase(fetchUserData.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
+        state.user = action.payload.client;
+        state.appointments = action.payload.appointments;
         state.isAuthenticated = true;
       })
       .addCase(fetchUserData.rejected, (state, action) => {

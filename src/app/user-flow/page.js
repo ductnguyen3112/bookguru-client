@@ -1,9 +1,33 @@
+'use client'
 import Link from "next/link";
 import { ChevronRightIcon, XMarkIcon } from "@heroicons/react/20/solid";
+import { useDispatch } from 'react-redux';
+import { setModal, setModalTitle } from '@/app/redux/slices/dataSlice';
+import { useRouter, usePathname } from 'next/navigation';
 
 export default function UserFlow() {
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const navigateToBusiness = () => {
+    if (typeof window !== 'undefined') {
+      window.location.href = "https://app.bookguru.io";
+    }
+  };
+
+  const triggerSignInModal = () => {
+    if (pathname === "/user-flow") {
+      router.push("/client/");
+    } else {
+
+    dispatch(setModal(true));
+    dispatch(setModalTitle('ClientPhoneSignin'));
+    }
+  };
+
   return (
-    <div className="relative flex h-screen flex-col md:flex-row">
+    <div className="relative flex min-h-screen flex-col md:flex-row">
       {/* Close to Home */}
       <Link
         href="/"
@@ -14,7 +38,7 @@ export default function UserFlow() {
       </Link>
 
       {/* Left Section: Image */}
-      <div className="md:w-1/2 w-full bg-gray-100">
+      <div className="w-full md:w-1/2 bg-gray-100 h-[40vh] md:h-auto md:min-h-screen">
         <img
           src="https://images.unsplash.com/photo-1559136555-9303baea8ebd?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&crop=focalpoint&fp-x=.4&w=2560&h=3413&&q=80"
           alt="User browsing on phone"
@@ -23,8 +47,8 @@ export default function UserFlow() {
       </div>
 
       {/* Right Section: Login Options */}
-      <div className="md:w-1/2 w-full flex flex-col justify-center items-center bg-white px-6">
-        <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-6">
+      <div className="w-full md:w-1/2 flex-1 flex flex-col justify-start md:justify-center items-center bg-white px-4 sm:px-6 py-8 md:py-0">
+        <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-6 text-center">
           Sign up/log in
         </h1>
 
@@ -32,11 +56,12 @@ export default function UserFlow() {
           {/* Customers */}
           <button
             type="button"
-            className="w-full rounded-xl border border-gray-300  px-5 py-4 text-left  transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            onClick={triggerSignInModal}
+            className="w-full block rounded-xl border border-gray-300 px-5 py-4 text-left transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xl font-semibold text-gray-900">
+                <div className="text-lg font-semibold text-gray-900">
                   BookGuru for customers
                 </div>
                 <p className="mt-0.5 text-base text-gray-500">
@@ -53,11 +78,12 @@ export default function UserFlow() {
           {/* Professionals */}
           <button
             type="button"
-            className="w-full rounded-xl border border-gray-300  px-5 py-4 text-left  transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            onClick={navigateToBusiness}
+            className="w-full rounded-xl border border-gray-300 px-5 py-4 text-left transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xl font-semibold text-gray-900">
+                <div className="text-lg font-semibold text-gray-900">
                   BookGuru for business
                 </div>
                 <p className="mt-0.5 text-base text-gray-500">

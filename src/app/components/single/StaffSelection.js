@@ -32,7 +32,7 @@ export default function StaffSelection() {
     {
       id: "any",
       staffName: "Any professional",
-   
+
       icon: <UserGroupIcon className="w-6 h-6 text-purple-600" />,
     },
     ...staffMembers.filter((s) => staffs.includes(s.id)),

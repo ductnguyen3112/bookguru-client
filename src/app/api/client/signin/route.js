@@ -26,7 +26,7 @@ export async function GET(request) {
 
     const clientAppointments = client.appointments;
 
-    // Retrieve all appointment objects
+    // Retrieve all appointment and return the appointments not only appointment id
     let appointments = [];
     if (clientAppointments) {
       appointments = await Promise.all(
@@ -35,13 +35,14 @@ export async function GET(request) {
         })
       );
     }
+   
 
     return NextResponse.json({
       message: "User found",
       status: 200,
       data: {
         client,
-        appointments: appointments,
+        appointments
       },
     });
   } catch (error) {
