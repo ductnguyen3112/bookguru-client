@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 
-import { setModal, setModalTitle } from "../redux/slices/dataSlice";
+import { setModal, setModalTitle } from "../../redux/slices/dataSlice";
 
 export default function GroupSummary() {
   const dispatch = useDispatch();

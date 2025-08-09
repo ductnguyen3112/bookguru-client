@@ -1,15 +1,16 @@
 import axios from "axios";
 import React from "react";
 import { notFound } from "next/navigation";
-import Header from "@/app/component/Header";
-import Services from "@/app/component/Services";
-import BookModal from "@/app/component/BookModal";
-import Team from "@/app/component/Team";
-import BusinessDetail from "../../component/BusinessDetail";
-import GoogleMap from "@/app/component/GoogleMap";
-import BusinessHours from "@/app/component/BusinessHour";
-import BookSelection from "@/app/component/BookSelection"; // Uncomment if you want to use BookSelection component
-import Meta from "@/app/component/Meta";
+import Header from "@/app/components/common/Header";
+import Services from "@/app/components/booking/Services";
+import BookModal from "@/app/components/common/BookModal";
+import Team from "@/app/components/booking/Team";
+import BusinessDetail from "../../components/booking/BusinessDetail";
+import GoogleMap from "@/app/components/booking/GoogleMap";
+import BusinessHours from "@/app/components/booking/BusinessHour";
+import BookSelection from "@/app/components/common/BookSelection"; // Uncomment if you want to use BookSelection component
+import Meta from "@/app/components/common/Meta";
+import Footer from "@/app/components/common/Footer";
 
 export default async function Page({ params }) {
   // Await params before using its properties.

@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect } from "react";
 import { useParams } from "next/navigation";
-import SelectServices from "@/app/component/SelectServices";
+import SelectServices from "@/app/components/single/SelectServices";
 
 import axios from "axios";
 import { useDispatch } from "react-redux";

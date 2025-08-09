@@ -1,9 +1,9 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Footer from "./component/Footer";
+import Footer from "./components/common/Footer";
 import { ReduxProvider } from "./redux/provider";
 
-import ClientModal from "./component/client/ClientModal";
+import ClientModal from "./components/client/ClientModal";
 
 import { Toaster } from "react-hot-toast";
 
@@ -31,7 +31,7 @@ export default function RootLayout({ children }) {
             <ClientModal/>
           </ReduxProvider>
    
-        <Footer />
+
       </body>
     </html>
   );

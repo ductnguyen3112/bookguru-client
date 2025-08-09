@@ -1,13 +1,5 @@
 import Pusher from "pusher";
 import PusherServer from "pusher";
-import PusherClient from "pusher-js";
-export const getCurrentStep = () => {
-  // Using URL to parse pathname makes it more robust
-  const { pathname } = new URL(window.location.href);
-  const segments = pathname.split("/").filter;
-  // The last segment is considered the step. If the business domain is the base, adjust accordingly.
-  return segments[segments.length - 1].split("#")[0];
-};
 
 export const goBack = () => {
   window.history.back();
@@ -24,12 +16,6 @@ export const bookAppointment = async (data) => {
   }
 };
 
-export const isToken = () => {
-  if (typeof window === "undefined") return false; // prevent crash during SSR
-  const token = localStorage.getItem("token");
-  return !!token && token !== "null" && token !== "undefined" && token !== "";
-};
-
 export const pusherServer = new Pusher({
   appId: process.env.PUSHER_APP_ID,
   key: process.env.NEXT_PUBLIC_PUSHER_APP_KEY,
@@ -38,17 +24,14 @@ export const pusherServer = new Pusher({
   useTLS: true,
 });
 
-// Client-side Pusher instance
-export const pusherClient = new PusherClient(
-  process.env.NEXT_PUBLIC_PUSHER_APP_KEY,
-  {
-    cluster: "us2",
-    authEndpoint: "/api/pusher-auth",
-    authTransport: "ajax",
-    auth: {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    },
+// Function to compute totals (cost and duration)
+export const computeTotals = (services) => {
+  let cost = 0;
+  let duration = 0;
+  for (let i = 0; i < services.length; i++) {
+    const s = services[i];
+    cost += Number(s?.price || 0);
+    duration += Number(s?.duration || 0);
   }
-);
+  return { cost, duration };
+};

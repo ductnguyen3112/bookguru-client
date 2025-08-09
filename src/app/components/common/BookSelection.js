@@ -2,7 +2,7 @@
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter, usePathname } from "next/navigation";
-import { setBookSelection } from "../redux/slices/dataSlice";
+import { setBookSelection } from "../../redux/slices/dataSlice";
 
 export default function BookSelection() {
   const dispatch = useDispatch();

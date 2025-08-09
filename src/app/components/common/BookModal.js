@@ -2,7 +2,7 @@
 import React from "react";
 
 import { useDispatch } from "react-redux";
-import { setBookSelection } from "../redux/slices/dataSlice";
+import { setBookSelection } from "../../redux/slices/dataSlice";
 
 // Helper to format time as "h:mm AM/PM"
 function formatTime(hours, minutes) {

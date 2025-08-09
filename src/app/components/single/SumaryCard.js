@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import axios from "axios";
-import { setModal, setModalTitle, addStaff } from "../redux/slices/dataSlice";
+import { setModal, setModalTitle, addStaff } from "../../redux/slices/dataSlice";
 
 const SummaryCard = () => {
   const dispatch = useDispatch();

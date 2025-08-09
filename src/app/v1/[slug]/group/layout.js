@@ -1,7 +1,8 @@
 import React from "react";
-import SumaryCard from "@/app/component/SumaryCard";
-import GroupSumary from "@/app/component/GroupSumary";
-import SimpleHeader from "@/app/component/SimpleHeader";
+import SumaryCard from "@/app/components/single/SumaryCard";
+import GroupSumary from "@/app/components/group/GroupSumary";
+import SimpleHeader from "@/app/components/common/SimpleHeader";
+
 
 export default function Layout({ children }) {
   return (
@@ -18,6 +19,8 @@ export default function Layout({ children }) {
           </div>
         </div>
       </div>
+  
     </section>
+    
   );
 }

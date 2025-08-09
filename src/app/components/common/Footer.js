@@ -31,6 +31,10 @@ const navigation = [
   ]
   
   export default function Footer() {
+
+    // get current year
+    const currentYear = new Date().getFullYear();
+
     return (
       <footer className="bg-white border-t border-gray-200">
         <div className="mx-auto max-w-7xl px-6 py-12 md:flex md:items-center md:justify-between lg:px-8 ">
@@ -43,7 +47,7 @@ const navigation = [
             ))}
           </div>
           <p className="mt-8 text-center text-sm/6 text-gray-600 md:order-1 md:mt-0">
-            &copy; 2025 BookGuru, Inc. All rights reserved.
+            &copy; {currentYear} BookGuru by Cisec Solution. All rights reserved.
           </p>
         </div>
       </footer>

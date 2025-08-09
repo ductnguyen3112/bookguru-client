@@ -1,4 +1,4 @@
-import StaffSelection from '@/app/component/StaffSelection'
+import StaffSelection from '@/app/components/single/StaffSelection'
 import React from 'react'
 
 const page = () => {

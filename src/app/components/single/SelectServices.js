@@ -2,13 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import {
-  addServices,
-  addCost,
-  addDuration,
-  addStaffs,
-} from "../redux/slices/dataSlice";
-
+import { addServices, addCost, addDuration, addStaffs } from "../../redux/slices/dataSlice";
 export default function SelectServices() {
   const dispatch = useDispatch();
 
@@ -50,10 +44,10 @@ export default function SelectServices() {
   const updateServiceTotals = (services) => {
     dispatch(addServices(services));
     dispatch(
-      addCost(services.reduce((acc, s) => acc + Number(s.price), 0))
+      addCost(services?.reduce((acc, s) => acc + Number(s.price), 0))
     );
     dispatch(
-      addDuration(services.reduce((acc, s) => acc + Number(s.duration), 0))
+      addDuration(services?.reduce((acc, s) => acc + Number(s.duration), 0))
     );
   };
 

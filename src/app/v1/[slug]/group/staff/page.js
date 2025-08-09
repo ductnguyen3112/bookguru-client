@@ -5,7 +5,7 @@ import { UserIcon, UserPlusIcon } from "@heroicons/react/24/outline";
 import { useDispatch, useSelector } from "react-redux";
 import { setStaffPreference } from "@/app/redux/slices/groupSlice";
 import { useRouter } from "next/navigation";
-import GroupStaff from "@/app/component/GroupStaff";
+import GroupStaff from "@/app/components/group/GroupStaff";
 import { setStaffSelection } from "@/app/redux/slices/groupSlice";
 
 export default function GroupStaffSelection() {

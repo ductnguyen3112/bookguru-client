@@ -1,5 +1,5 @@
 "use client";
-import GroupServices from "@/app/component/GroupServices";
+import GroupServices from "@/app/components/group/GroupServices";
 import { useParams } from "next/navigation";
 import { useEffect } from "react";
 import axios from "axios";

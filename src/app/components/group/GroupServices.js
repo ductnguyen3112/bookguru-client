@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useSelector, useDispatch, shallowEqual } from "react-redux";
-import { updateGuest } from "../redux/slices/groupSlice";
-import { setModal, setModalTitle } from "../redux/slices/dataSlice";
+import { updateGuest } from "../../redux/slices/groupSlice";
+import { setModal, setModalTitle } from "../../redux/slices/dataSlice";
 
 export default function GroupServices() {
   const dispatch = useDispatch();
