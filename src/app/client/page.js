@@ -1,27 +1,59 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   UserCircleIcon,
   CalendarDaysIcon,
-  CreditCardIcon,
   HeartIcon,
   GiftIcon,
   ClipboardDocumentListIcon,
-  ShoppingBagIcon,
   Cog6ToothIcon,
-  ArrowDownTrayIcon,
   QuestionMarkCircleIcon,
   GlobeAmericasIcon,
   ChevronRightIcon,
   XMarkIcon,
+  ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
+import { logout } from "@/app/redux/slices/authSlice";
+import ClientPhoneSignin from "@/app/components/client/ClientPhoneSignin";
+import ClientLogin from "@/app/components/client/ClientLogin";
+import Preloader from "@/app/components/common/Preloader";
+import { initializeAuthOnLoad } from "@/app/redux/slices/authSlice";
 
-const clientPage = () => {
-  const userData = useSelector((state) => state.auth.user);
-  console.log(userData);
+const ClientPage = () => {
+  const { user: userData, appointments = [] } = useSelector((state) => state.auth);
+  const { isAuthenticated, initialized, loading } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
   const router = useRouter();
+  const [showLogin, setShowLogin] = useState(false);
+
+  // Kick off auth initialization on mount (idempotent)
+  useEffect(() => {
+    if (!initialized && !loading) {
+      dispatch(initializeAuthOnLoad());
+    }
+  }, [initialized, loading, dispatch]);
+
+  // While auth state is being determined, show preloader
+  if (!initialized || loading) {
+    return <Preloader label="Loading your account…" />;
+  }
+
+  // If not logged in after initialization, show inline login flow
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100">
+          {showLogin ? (
+            <ClientLogin />
+          ) : (
+            <ClientPhoneSignin phoneSignin={() => setShowLogin(true)} />
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-100 min-h-screen relative ">
@@ -53,7 +85,7 @@ const clientPage = () => {
         {/* Wallet Section */}
         <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-6 rounded-lg shadow-md mb-6">
           <h3 className="text-lg">Total Appointments</h3>
-          <p className="text-2xl font-bold">0</p>
+          <p className="text-2xl font-bold">{appointments?.length || 0}</p>
           <button
             className="mt-4 bg-white text-purple-500 px-4 py-2 rounded-lg font-medium"
             onClick={() => router.push("/client/appointments")}
@@ -67,7 +99,7 @@ const clientPage = () => {
           <ul className="space-y-4">
             <li
               className="flex items-center justify-between cursor-pointer"
-              onClick={() => router.push("/profile")}
+              onClick={() => router.push("/client/profile")}
             >
               <span className="flex items-center">
                 <UserCircleIcon className="h-6 w-6 text-gray-500 mr-2" />
@@ -87,7 +119,7 @@ const clientPage = () => {
             </li>
             <li
               className="flex items-center justify-between cursor-pointer"
-              onClick={() => router.push("/favorites")}
+              onClick={() => router.push("#")}
             >
               <span className="flex items-center">
                 <HeartIcon className="h-6 w-6 text-gray-500 mr-2" />
@@ -97,7 +129,7 @@ const clientPage = () => {
             </li>
             <li
               className="flex items-center justify-between cursor-pointer"
-              onClick={() => router.push("/gift-card")}
+              onClick={() => router.push("#")}
             >
               <span className="flex items-center">
                 <GiftIcon className="h-6 w-6 text-gray-500 mr-2" />
@@ -107,7 +139,7 @@ const clientPage = () => {
             </li>
             <li
               className="flex items-center justify-between cursor-pointer"
-              onClick={() => router.push("/forms")}
+              onClick={() => router.push("#")}
             >
               <span className="flex items-center">
                 <ClipboardDocumentListIcon className="h-6 w-6 text-gray-500 mr-2" />
@@ -117,7 +149,7 @@ const clientPage = () => {
             </li>
             <li
               className="flex items-center justify-between cursor-pointer"
-              onClick={() => router.push("/settings")}
+              onClick={() => router.push("#")}
             >
               <span className="flex items-center">
                 <Cog6ToothIcon className="h-6 w-6 text-gray-500 mr-2" />
@@ -133,16 +165,6 @@ const clientPage = () => {
           <ul className="space-y-4">
             <li
               className="flex items-center justify-between cursor-pointer"
-              onClick={() => router.push("/download-app")}
-            >
-              <span className="flex items-center">
-                <ArrowDownTrayIcon className="h-6 w-6 text-gray-500 mr-2" />
-                Download the app
-              </span>
-              <ChevronRightIcon className="h-6 w-6 text-gray-500" />
-            </li>
-            <li
-              className="flex items-center justify-between cursor-pointer"
               onClick={() => router.push("/help-support")}
             >
               <span className="flex items-center">
@@ -153,11 +175,24 @@ const clientPage = () => {
             </li>
             <li
               className="flex items-center justify-between cursor-pointer"
-              onClick={() => router.push("/language")}
+              onClick={() => router.push("#")}
             >
               <span className="flex items-center">
                 <GlobeAmericasIcon className="h-6 w-6 text-gray-500 mr-2" />
                 English
+              </span>
+              <ChevronRightIcon className="h-6 w-6 text-gray-500" />
+            </li>
+            <li
+              className="flex items-center justify-between cursor-pointer"
+              onClick={() => {
+                dispatch(logout());
+                router.push("/");
+              }}
+            >
+              <span className="flex items-center">
+                <ArrowRightOnRectangleIcon className="h-6 w-6 text-gray-500 mr-2" />
+                Sign Out
               </span>
               <ChevronRightIcon className="h-6 w-6 text-gray-500" />
             </li>
@@ -168,4 +203,4 @@ const clientPage = () => {
   );
 };
 
-export default clientPage;
+export default ClientPage;

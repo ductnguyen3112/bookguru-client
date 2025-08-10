@@ -39,6 +39,7 @@ export async function POST(request) {
       clientPhone: client.clientPhone,
       clientEmail: client.clientEmail,
       clientPassword: client.clientPassword,
+      
     };
 
     const token = jwt.sign(tokenData, process.env.TOKEN_SECRET, {

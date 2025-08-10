@@ -29,6 +29,7 @@ export async function POST(request) {
       note = "",
       servicesByGuest = {},
       preferenceByGuest = {},
+      groupId: inputGroupId,
     } = body;
 
     // 1) Validate required fields
@@ -102,7 +103,40 @@ export async function POST(request) {
 
     const mainBookerName = mainClient.clientName;
 
-    const groupId = new mongoose.Types.ObjectId();
+    // Helper to generate a unique groupId not used by any Appointment
+    const generateUniqueGroupId = async () => {
+      for (let i = 0; i < 5; i++) {
+        const candidate = new mongoose.Types.ObjectId();
+        const exists = await Appointment.exists({ groupId: candidate }).session(session);
+        if (!exists) return candidate;
+      }
+      throw new Error('Failed to generate unique groupId');
+    };
+
+    // Determine groupId: validate provided one or generate a unique one
+    let groupId;
+    if (inputGroupId) {
+      try {
+        const candidate = new mongoose.Types.ObjectId(inputGroupId);
+        const exists = await Appointment.exists({ groupId: candidate }).session(session);
+        if (exists) {
+          await session.abortTransaction();
+          return NextResponse.json(
+            { success: false, message: "groupId already exists. Please omit groupId to let server generate a new one." },
+            { status: 400 }
+          );
+        }
+        groupId = candidate;
+      } catch {
+        await session.abortTransaction();
+        return NextResponse.json(
+          { success: false, message: "Invalid groupId provided" },
+          { status: 400 }
+        );
+      }
+    } else {
+      groupId = await generateUniqueGroupId();
+    }
     const createdAppointments = [];
     const conflictErrors = [];
 
@@ -252,7 +286,7 @@ export async function POST(request) {
     return NextResponse.json({
       success: true,
       message: "Group appointments created successfully",
-      groupId,
+      groupId: String(groupId),
       appointments: createdAppointments,
       summary: {
         totalAppointments: createdAppointments.length,

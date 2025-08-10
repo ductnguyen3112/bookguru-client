@@ -31,10 +31,12 @@ export default function Header() {
       <nav className="mx-auto flex w-full items-center justify-between p-6 lg:px-8">
         <div className="flex items-center gap-x-6">
           {/* Logo */}
-          <a className="text-lg font-bold text-gray-700">Book Guru</a>
+          <a href="#home" className="-m-1.5">
+            <img alt="BookGuru" src="/logo/logo-main.svg" className="h-5 w-auto" />
+          </a>
           {/* Welcome message */}
           {isAuthenticated && user && (
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-gray-600 hidden lg:block">
               Welcome, {user.clientName}
             </span>
           )}

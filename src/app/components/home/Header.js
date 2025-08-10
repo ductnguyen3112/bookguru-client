@@ -18,7 +18,7 @@ export default function Header() {
     <header className="absolute inset-x-0 top-0 z-50">
       <nav aria-label="Global" className="flex items-center justify-between p-6 lg:px-8">
         <div className="flex lg:flex-1">
-          <a href="#home" className="-m-1.5 p-1.5">
+          <a href="/" className="-m-1.5 p-1.5">
             <span className="sr-only">BookGuru</span>
             <img alt="" src="/logo/logo-main.svg" className="h-8 w-auto" />
           </a>
@@ -35,7 +35,7 @@ export default function Header() {
         </div>
         <div className="hidden lg:flex lg:gap-x-12">
           {navigation.map((item) => (
-            <a key={item.name} href={item.href} className="text-sm font-semibold text-gray-900">
+            <a key={item.name} href={item.href} className="text-md font-semibold text-gray-900">
               {item.name}
             </a>
           ))}

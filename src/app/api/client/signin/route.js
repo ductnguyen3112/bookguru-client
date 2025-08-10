@@ -19,6 +19,7 @@ export async function GET(request) {
     }
 
     const client = await Client.findOne({ _id: clientId }).select("-clientPassword");
+    console.log("Client fetched:", client);
 
     if (!client) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });

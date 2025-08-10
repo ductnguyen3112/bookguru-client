@@ -16,6 +16,7 @@ const ClientLogin = () => {
   const dispatch = useDispatch();
 
   const router = useRouter();
+  const pathname = usePathname();
 
   const phoneNumber = useSelector((state) => state.data.client.phone);
   const loading = useSelector((state) => state.auth.loading);
@@ -36,10 +37,8 @@ const ClientLogin = () => {
       dispatch(setModal(false));
       toast.success("Login successful");
 
-      // redirect
-      const slug = window.location.pathname.split("/")[2];
-      if (slug === "client") {
-        router.push("/v1/client/dashboard");
+      if (pathname === "/user-flow") {
+        router.push("/client");
       }
     } catch (err) {
       toast.error(err || "Login failed");
@@ -73,7 +72,7 @@ const ClientLogin = () => {
   };
 
   return (
-    <div className="mt-3 text-center w-80 bg-white border border-gray-200 rounded-lg shadow-md">
+    <div className="mt-3 text-center w-80 bg-white">
       <div className="mt-2 px-2 py-3">
         <h3 className="text-lg leading-6 font-medium text-dark">
           Please Login

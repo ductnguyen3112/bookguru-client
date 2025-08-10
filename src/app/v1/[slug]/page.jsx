@@ -44,7 +44,7 @@ export default async function Page({ params }) {
 
   return (
     <>
-      <Meta data={data} />
+
       <Header data={data} />
       {/* Uncomment the following line if you want to use BookSelection component */}
       <BookSelection />

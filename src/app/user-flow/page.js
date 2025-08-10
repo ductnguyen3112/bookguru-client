@@ -1,28 +1,28 @@
-'use client'
+"use client";
 import Link from "next/link";
 import { ChevronRightIcon, XMarkIcon } from "@heroicons/react/20/solid";
-import { useDispatch } from 'react-redux';
-import { setModal, setModalTitle } from '@/app/redux/slices/dataSlice';
-import { useRouter, usePathname } from 'next/navigation';
+import { useDispatch, useSelector } from "react-redux";
+import { setModal, setModalTitle } from "@/app/redux/slices/dataSlice";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function UserFlow() {
   const dispatch = useDispatch();
   const router = useRouter();
   const pathname = usePathname();
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
 
   const navigateToBusiness = () => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       window.location.href = "https://app.bookguru.io";
     }
   };
 
   const triggerSignInModal = () => {
-    if (pathname === "/user-flow") {
+    if (isAuthenticated) {
       router.push("/client/");
     } else {
-
-    dispatch(setModal(true));
-    dispatch(setModalTitle('ClientPhoneSignin'));
+      dispatch(setModal(true));
+      dispatch(setModalTitle("ClientPhoneSignin"));
     }
   };
 

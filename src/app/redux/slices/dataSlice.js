@@ -4,7 +4,8 @@ const initialState = {
   business: {},
   modal: false,
   modalTitle: "",
-  isLoggedIn: false,
+  modifyAppointment:false,
+
   bookSelection:false,
 
 
@@ -114,6 +115,9 @@ const dataSlice = createSlice({
     setRemainingTime(state, action) {
       state.client.remainingTime = action.payload;
     },
+    setModifyAppointment(state, action) {
+      state.modifyAppointment = action.payload;
+    },
 
   },
 });
@@ -142,6 +146,7 @@ export const {
   setBookSelection,
   setConfirmOTP,
   setRemainingTime,
+  setModifyAppointment
 
 } = dataSlice.actions;
 export default dataSlice.reducer;

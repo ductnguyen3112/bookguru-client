@@ -46,6 +46,10 @@ const clientSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Review",
     },
+    gender: {
+      type: String,
+      enum: ["male", "female", "other"],
+    },
     appointments: [
       {
         type: Schema.Types.ObjectId,

@@ -1,9 +1,17 @@
 import Link from "next/link";
 import { XMarkIcon } from "@heroicons/react/20/solid";
+import Meta from "@/app/components/common/Meta";
 
 export default function Contact() {
+  const metaData = {
+    businessName: "Contact • BookGuru",
+    businessAddress: "Get in touch",
+    businessDescription:
+      "Contact BookGuru for support, partnership inquiries, or general questions.",
+  };
   return (
     <div className="relative bg-white lg:h-screen lg:overflow-hidden">
+      <Meta data={metaData} />
       {/* Close to Home */}
       <Link
         href="/"
