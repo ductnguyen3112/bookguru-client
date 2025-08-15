@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
 import moment from "moment-timezone";
@@ -13,13 +13,17 @@ import {
 export default function TimeSelection() {
   const dispatch = useDispatch();
   const businessData = useSelector((state) => state.data.business);
+  const staffs = useSelector((state) => state.data.business?.staffs || []);
 
   const selectedData = useSelector((state) => state.data.selected);
   const selectedStaff = selectedData.staff;
   const duration = selectedData.duration;
   const timezone = businessData.businessTimezone;
   const preference = selectedData.preference;
-  const staffs = useSelector((state) => state.data.business?.staffs || []);
+  // businessStaffs are used for the UI dropdown
+  const businessStaffs = useSelector((state) => state.data.business?.staffs || []);
+  // serviceStaffIds contains staff ids filtered by selected services (from SelectServices)
+  const serviceStaffIds = useSelector((state) => state.data.selected?.staffs || []);
 
   const preferenceStaff = staffs.find((s) => s._id === selectedStaff);
   const isAnySelected = !preference || !selectedStaff;
@@ -33,8 +37,24 @@ export default function TimeSelection() {
   const [timeSlots, setTimeSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Refs to avoid double-fetch when we programmatically set a random staff
+  const skipNextFetchRef = useRef(false);
+  const lastAssignedStaffRef = useRef(null);
 
   useEffect(() => {
+    // If we recently assigned a random staff from server and the selectedStaff matches, skip this run
+    if (
+      skipNextFetchRef.current &&
+      selectedStaff &&
+      lastAssignedStaffRef.current &&
+      String(selectedStaff) === String(lastAssignedStaffRef.current)
+    ) {
+      // consume the skip marker and do not fetch
+      skipNextFetchRef.current = false;
+      lastAssignedStaffRef.current = null;
+      return;
+    }
+
     if (!selectedDateUTC || !duration || !businessData?.businessURL) return;
 
     const controller = new AbortController();
@@ -50,7 +70,14 @@ export default function TimeSelection() {
         };
 
         if (!selectedStaff) {
-          payload.staffs = staffs.map((s) => s._id);
+          // Prefer service-specific staff ids produced by the SelectServices logic.
+          // If none are available, fall back to the business-wide staff list.
+          const staffListForPayload =
+            Array.isArray(serviceStaffIds) && serviceStaffIds.length > 0
+              ? serviceStaffIds.map((s) => (typeof s === "string" ? s : s._id || s))
+              : businessStaffs.map((s) => s._id);
+
+          payload.staffs = staffListForPayload;
         } else {
           payload.staff = selectedStaff;
         }
@@ -61,6 +88,9 @@ export default function TimeSelection() {
     
 
         if (!selectedStaff && response.data.staff) {
+          // mark that we programmatically set the staff to avoid an immediate re-fetch
+          lastAssignedStaffRef.current = response.data.staff;
+          skipNextFetchRef.current = true;
           dispatch(addStaff(response.data.staff));
         }
 

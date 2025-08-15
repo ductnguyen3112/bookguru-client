@@ -22,7 +22,7 @@ export default function AppointmentOverview() {
 
   // Find staff object by ID
   const staffMember = business?.staffs?.find((s) => s._id === staff) || {};
-
+  console.log("Staff Member:", staffMember);
   // ✅ Fix: Flatten all services and properly compare IDs
   const allServices = business?.catalogue?.flatMap((cat) => cat.categoryServices) || [];
   

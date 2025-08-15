@@ -11,15 +11,15 @@ export default function GroupConfirmPage() {
   const [appointmentDetails, setAppointmentDetails] = useState(null);
 
   // Calculate group details
-  const groupDuration = Math.max(...guests.map(g => g.duration || 0));
+  const groupDuration = Math.max(...guests.map((g) => g.duration || 0));
   const totalCost = guests.reduce((sum, guest) => sum + (guest.cost || 0), 0);
   const timezone = business?.businessTimezone || "America/New_York";
 
   useEffect(() => {
     if (time && business?.businessTimezone) {
       const startTime = moment(time).tz(timezone);
-      const endTime = startTime.clone().add(groupDuration, 'minutes');
-      
+      const endTime = startTime.clone().add(groupDuration, "minutes");
+
       setAppointmentDetails({
         date: startTime.format("MMMM DD, YYYY"),
         startTime: startTime.format("h:mm A"),
@@ -30,8 +30,8 @@ export default function GroupConfirmPage() {
 
     // Redirect to home after 10 seconds
     const redirectTimer = setTimeout(() => {
-      if (business?.businessURL) {
-        window.location.href = `/v1/${business.businessURL}`;
+      if (business.businessDomain) {
+        window.location.href = `https://${business.businessDomain}`;
       }
     }, 10000);
 
@@ -55,8 +55,18 @@ export default function GroupConfirmPage() {
         {/* Success Icon */}
         <div className="text-center mb-8">
           <div className="mx-auto flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+            <svg
+              className="w-8 h-8 text-green-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M5 13l4 4L19 7"
+              ></path>
             </svg>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -82,7 +92,7 @@ export default function GroupConfirmPage() {
                 {business.businessName}
               </h2>
               <p className="text-gray-600">{business.businessAddress}</p>
-              <a 
+              <a
                 href={`tel:${business.businessPhone}`}
                 className="text-blue-600 hover:underline"
               >
@@ -106,11 +116,13 @@ export default function GroupConfirmPage() {
               </p>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm font-medium text-gray-500">Duration</p>
-              <p className="text-lg text-gray-900">{appointmentDetails.duration} minutes</p>
+              <p className="text-lg text-gray-900">
+                {appointmentDetails.duration} minutes
+              </p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Total Cost</p>
@@ -126,11 +138,14 @@ export default function GroupConfirmPage() {
           </h3>
           <div className="space-y-3">
             {guests.map((guest, index) => (
-              <div key={guest.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div
+                key={guest.id}
+                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+              >
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                     <span className="text-sm font-medium text-blue-600">
-                      {guest.name?.charAt(0) || (index + 1)}
+                      {guest.name?.charAt(0) || index + 1}
                     </span>
                   </div>
                   <div>
@@ -143,7 +158,8 @@ export default function GroupConfirmPage() {
                       )}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {guest.services?.length || 0} service(s) • ${guest.cost || 0}
+                      {guest.services?.length || 0} service(s) • $
+                      {guest.cost || 0}
                     </p>
                   </div>
                 </div>
@@ -166,7 +182,9 @@ export default function GroupConfirmPage() {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3">
           <button
-            onClick={() => window.location.href = `/v1/${business.businessURL}`}
+            onClick={() =>
+              (window.location.href = `/v1/${business.businessURL}`)
+            }
             className="flex-1 bg-black text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-800 transition"
           >
             Back to {business.businessName}

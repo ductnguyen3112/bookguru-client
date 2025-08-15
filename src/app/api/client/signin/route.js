@@ -9,7 +9,6 @@ connect();
 export async function GET(request) {
   try {
     const clientId = await getDataFromToken(request);
- 
 
     if (!clientId) {
       return NextResponse.json({
@@ -18,8 +17,9 @@ export async function GET(request) {
       });
     }
 
-    const client = await Client.findOne({ _id: clientId }).select("-clientPassword");
-    console.log("Client fetched:", client);
+    const client = await Client.findOne({ _id: clientId }).select(
+      "-clientPassword"
+    );
 
     if (!client) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -32,18 +32,19 @@ export async function GET(request) {
     if (clientAppointments) {
       appointments = await Promise.all(
         clientAppointments.map(async (appointmentId) => {
-          return await Appointment.findOne({ _id: appointmentId }).select("-businessId");
+          return await Appointment.findOne({ _id: appointmentId }).select(
+            "-businessId"
+          );
         })
       );
     }
-   
 
     return NextResponse.json({
       message: "User found",
       status: 200,
       data: {
         client,
-        appointments
+        appointments,
       },
     });
   } catch (error) {

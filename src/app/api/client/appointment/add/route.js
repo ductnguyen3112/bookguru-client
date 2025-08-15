@@ -5,6 +5,8 @@ import Appointment from "@/app/model/appointmentModel";
 import Staff from "@/app/model/staffModel";
 import Client from "@/app/model/clientModel";
 import { pusherServer } from "@/app/helper/helper";
+import { automationFilter } from "@/app/utils/automation";
+import { sendAdminNotification } from "@/app/utils/common";
 
 import moment from "moment-timezone";
 
@@ -153,46 +155,22 @@ export async function POST(request) {
       code: appointment.code,
     };
 
-    // const adminEmailData = {
-    //   email: business.businessEmail,
-    //   subject: `New Appointment Notification at ${bookTime}`,
-    //   html: `
-    //     <html>
-    //     <head><style>
-    //     .email-container { font-family: Arial; padding: 20px; background: #f9f9f9; }
-    //     .header { font-size: 20px; font-weight: bold; margin-bottom: 20px; }
-    //     .content p { font-size: 16px; }
-    //     .button { padding: 10px 20px; font-size: 16px; color: white; background-color: #4CAF50; border-radius: 5px; text-decoration: none; margin-top: 20px; }
-    //     </style></head>
-    //     <body>
-    //       <div class="email-container">
-    //         <div class="header">New Appointment Notification</div>
-    //         <div class="content">
-    //           <p>Hello Administrator,</p>
-    //           <p>A new appointment has been booked. Here are the details:</p>
-    //           <p><strong>Name:</strong> ${user.clientName}</p>
-    //           <p><strong>Phone:</strong> ${user.clientPhone}</p>
-    //           <p><strong>Email:</strong> ${user.clientEmail}</p>
-    //           <p><strong>Appointment Time:</strong> ${bookTime}</p>
-    //           <p><strong>Staff Member:</strong> ${staffMember.staffName}</p>
-    //           <p><strong>Services:</strong> ${services.map(s => s.serviceName).join(", ")}</p>
-    //           <p><strong>Status:</strong> ${appointment.status}</p>
-    //           <p><strong>Appointment Code:</strong> ${appointment.code}</p>
-    //           <p><strong>Preference:</strong> ${appointment.preference ? "Yes" : "No"}</p>
-    //           <a href="https://bookguru.io/dashboard/calendar" class="button">View Appointment</a>
-    //         </div>
-    //         <div class="footer">
-    //           Regards,<br/>bookguru.io
-    //         </div>
-    //       </div>
-    //     </body>
-    //     </html>
-    //   `,
-    // };
+    // Attach automationFilter to handle notifications
+    await automationFilter(automationData);
 
-    // await automationFilter(automationData);
-    // await sendEmail(adminEmailData);
-    // await addNotification(appointment._id, "new");
+    // send admin email to business
+    try {
+      await sendAdminNotification({
+        business,
+        appointment,
+        client: user,
+        staffMember,
+        services,
+        bookTime,
+      });
+    } catch (adminErr) {
+      console.error("Failed to send admin notification:", adminErr);
+    }
 
     return NextResponse.json({
       message: "Appointment added to the business",

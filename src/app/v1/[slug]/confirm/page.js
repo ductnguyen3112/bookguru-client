@@ -20,8 +20,8 @@ export default function BookingConfirmPage() {
       });
 
       const timer = setTimeout(() => {
-        if (business.businessURL) {
-          window.location.href = `/v1/${business.businessURL}`;
+        if (business.businessDomain) {
+          window.location.href = `${business.businessDomain}`;
         }
       }, 5000);
       return () => clearTimeout(timer);
